@@ -9,6 +9,7 @@ TARGET = $(OBJDIR)/tmap
 
 OBJS =	$(OBJDIR)/tmap.o \
 	$(OBJDIR)/render.o \
+	$(OBJDIR)/rast.o \
 	$(OBJDIR)/pcx.o
 
 all: $(TARGET)
@@ -25,6 +26,8 @@ $(TARGET): $(OBJS)
 $(OBJDIR)/tmap.o: tmap.c
 	$(CC) -c $(CFLAGS) $? -o $@
 $(OBJDIR)/render.o: render.c
+	$(CC) -c $(CFLAGS) $? -o $@
+$(OBJDIR)/rast.o: rast.c
 	$(CC) -c $(CFLAGS) $? -o $@
 $(OBJDIR)/pcx.o: pcx.c
 	$(CC) -c $(CFLAGS) $? -o $@
