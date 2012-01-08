@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "cdefs.h"
 #include "pcx.h"
 #include "render.h"
@@ -65,7 +67,7 @@ AddEdge (int v1, int v2)
 static void
 AddSurfEdge (int v1, int v2)
 {
-	struct edge_s *e;
+	const struct edge_s *e;
 	int i;
 
 	for (i = 0, e = r_edges; i < num_edges; i++, e++)
@@ -90,6 +92,8 @@ AddQuad (struct tex_s *tex, int v1, int v2, int v3, int v4)
 	struct surf_s *s;
 
 	s = &r_surfs[num_surfs++];
+	memset (s, 0, sizeof(*s));
+
 	s->tex = tex;
 	s->firstedge = num_surfedges;
 	AddSurfEdge (v1, v2);
@@ -135,25 +139,25 @@ R_SetupGeometry (void)
 	AddVertex (-x, -y, -z);
 	AddVertex ( x, -y, -z);
 
-	AddEdge (0, 1);
+	AddEdge (0, 1); /* top */
 	AddEdge (1, 2);
 	AddEdge (2, 3);
 	AddEdge (3, 0);
-	AddEdge (0, 4);
+	AddEdge (0, 4); /* sides */
 	AddEdge (1, 5);
 	AddEdge (2, 6);
 	AddEdge (3, 7);
-	AddEdge (4, 5);
+	AddEdge (4, 5); /* bottom */
 	AddEdge (5, 6);
 	AddEdge (6, 7);
 	AddEdge (7, 4);
 
-	AddQuad (&tex_front, 3, 2, 6, 7);
-	AddQuad (&tex_front, 1, 0, 4, 5);
-	AddQuad (&tex_side, 0, 3, 7, 4);
-	AddQuad (&tex_side, 2, 1, 5, 6);
-	AddQuad (&tex_floor, 0, 1, 2, 3);
-	AddQuad (&tex_floor, 7, 6, 5, 4);
+	AddQuad (&tex_front, 3, 2, 6, 7); /* front */
+	AddQuad (&tex_front, 1, 0, 4, 5); /* back */
+	AddQuad (&tex_side, 0, 3, 7, 4); /* right */
+	AddQuad (&tex_side, 2, 1, 5, 6); /* left */
+	AddQuad (&tex_floor, 0, 1, 2, 3); /* top */
+	AddQuad (&tex_floor, 7, 6, 5, 4); /* bottom */
 }
 
 

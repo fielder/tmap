@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include <SDL.h>
 
 #include "cdefs.h"
@@ -13,13 +15,13 @@ uint8_t *r_buf = NULL;
 void
 R_Init (void)
 {
-	R_SetupGeometry ();
-
 	SDL_InitSubSystem (SDL_INIT_VIDEO);
 
 	sdl_surf = SDL_SetVideoMode (r_w, r_h, 8,
 				SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_HWPALETTE);
 	r_buf = malloc (r_w * r_h);
+
+	R_SetupGeometry ();
 }
 
 
