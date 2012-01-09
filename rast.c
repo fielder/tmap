@@ -29,6 +29,9 @@ struct surf_s
 
 	struct tex_s *tex;
 
+	float normal[3];
+	float dist;
+
 	uint8_t *cache;
 	int cache_w, cache_h;
 };
@@ -45,6 +48,73 @@ static int num_surfs;
 static unsigned int r_surfedges[128];
 static int num_surfedges;
 
+/* ================================================================== */
+
+static void
+Vec_Copy (const float src[3], float out[3])
+{
+	out[0] = src[0];
+	out[1] = src[1];
+	out[2] = src[2];
+}
+
+
+static float
+Vec_Dot (const float a[3], const float b[3])
+{
+	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+
+static void
+Vec_Cross (const float a[3], const float b[3], float out[3])
+{
+	out[0] = a[1] * b[2] - a[2] * b[1];
+	out[1] = a[2] * b[0] - a[0] * b[2];
+	out[2] = a[0] * b[1] - a[1] * b[0];
+}
+
+
+static void
+Vec_Normalize (float v[3])
+{
+	float len;
+
+	len = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+	if (len == 0)
+	{
+		v[0] = 0.0;
+		v[1] = 0.0;
+		v[2] = 0.0;
+	}
+	else
+	{
+		len = 1.0 / len;
+		v[0] *= len;
+		v[1] *= len;
+		v[2] *= len;
+	}
+}
+
+
+static void
+Vec_Subtract (const float a[3], const float b[3], float out[3])
+{
+	out[0] = a[0] - b[0];
+	out[1] = a[1] - b[1];
+	out[2] = a[2] - b[2];
+}
+
+
+static void
+Vec_Add (const float a[3], const float b[3], float out[3])
+{
+	out[0] = a[0] + b[0];
+	out[1] = a[1] + b[1];
+	out[2] = a[2] + b[2];
+}
+
+/* ================================================================== */
 
 static void
 AddVertex (float x, float y, float z)
@@ -91,6 +161,7 @@ static void
 AddQuad (struct tex_s *tex, int v1, int v2, int v3, int v4)
 {
 	struct surf_s *s;
+	float a[3], b[3];
 
 	s = &r_surfs[num_surfs++];
 	memset (s, 0, sizeof(*s));
@@ -102,6 +173,12 @@ AddQuad (struct tex_s *tex, int v1, int v2, int v3, int v4)
 	AddSurfEdge (v3, v4);
 	AddSurfEdge (v4, v1);
 	s->numedges = num_surfedges - s->firstedge;
+
+	Vec_Subtract (r_verts[v2], r_verts[v1], a);
+	Vec_Subtract (r_verts[v3], r_verts[v1], b);
+	Vec_Cross (a, b, s->normal);
+	Vec_Normalize (s->normal);
+	s->dist = Vec_Dot (s->normal, r_verts[v1]);
 }
 
 
@@ -112,24 +189,11 @@ LoadTex (struct tex_s *tex, const char *path)
 }
 
 
-static void
-AdjustGeometry (float x, float y, float z)
-{
-	int i;
-
-	for (i = 0; i < num_verts; i++)
-	{
-		r_verts[i][0] += x;
-		r_verts[i][1] += y;
-		r_verts[i][2] += z;
-	}
-}
-
-
 void
 R_SetupGeometry (void)
 {
 	float x, y, z;
+	float dx, dy, dz;
 
 	LoadTex (&tex_floor, "CEIL5_2.pcx");
 	LoadTex (&tex_side, "WALL42_3.pcx");
@@ -142,17 +206,21 @@ R_SetupGeometry (void)
 	num_surfs = 0;
 	num_surfedges = 0;
 
+	dx = -48;
+	dy = 0;
+	dz = 128;
+
 	x = tex_front.w / 2.0;
 	y = tex_front.h / 2.0;
 	z = tex_side.w / 2.0;
-	AddVertex ( x,  y,  z); /* top verts */
-	AddVertex (-x,  y,  z);
-	AddVertex (-x,  y, -z);
-	AddVertex ( x,  y, -z);
-	AddVertex ( x, -y,  z); /* bottom verts */
-	AddVertex (-x, -y,  z);
-	AddVertex (-x, -y, -z);
-	AddVertex ( x, -y, -z);
+	AddVertex (dx +  x, dy +  y, dz +  z); /* top verts */
+	AddVertex (dx + -x, dy +  y, dz +  z);
+	AddVertex (dx + -x, dy +  y, dz + -z);
+	AddVertex (dx +  x, dy +  y, dz + -z);
+	AddVertex (dx +  x, dy + -y, dz +  z); /* bottom verts */
+	AddVertex (dx + -x, dy + -y, dz +  z);
+	AddVertex (dx + -x, dy + -y, dz + -z);
+	AddVertex (dx +  x, dy + -y, dz + -z);
 
 	AddEdge (0, 1); /* top */
 	AddEdge (1, 2);
@@ -167,14 +235,12 @@ R_SetupGeometry (void)
 	AddEdge (6, 7);
 	AddEdge (7, 4);
 
-	AddQuad (&tex_front, 3, 2, 6, 7); /* front */
-	AddQuad (&tex_front, 1, 0, 4, 5); /* back */
-	AddQuad (&tex_side, 0, 3, 7, 4); /* right */
-	AddQuad (&tex_side, 2, 1, 5, 6); /* left */
-	AddQuad (&tex_floor, 0, 1, 2, 3); /* top */
-	AddQuad (&tex_floor, 7, 6, 5, 4); /* bottom */
-
-	AdjustGeometry (-48, 0, 128);
+	AddQuad (&tex_front, 3, 7, 6, 2); /* front */
+	AddQuad (&tex_front, 1, 5, 4, 0); /* back */
+	AddQuad (&tex_side, 0, 4, 7, 3); /* right */
+	AddQuad (&tex_side, 2, 6, 5, 1); /* left */
+	AddQuad (&tex_floor, 0, 3, 2, 1); /* top */
+	AddQuad (&tex_floor, 7, 4, 5, 6); /* bottom */
 }
 
 /* ================================================================== */
@@ -213,6 +279,22 @@ SetupView (void)
 }
 
 
+static void
+R_DrawPoint (const float v[3])
+{
+	int x, y;
+	x = view.center_x + view.dist * (v[0] / v[2]);
+	y = view.center_y + view.dist * (v[1] / v[2]);
+	r_buf[y * r_w + x] = 4;
+}
+
+
+static void
+R_DrawSurf (struct surf_s *s)
+{
+}
+
+
 void
 R_DrawGeometry (void)
 {
@@ -221,11 +303,10 @@ R_DrawGeometry (void)
 	SetupView ();
 
 	for (i = 0; i < num_verts; i++)
+		R_DrawPoint (r_verts[i]);
+
+	for (i = 0; i < num_surfs; i++)
 	{
-		const float *v = r_verts[i];
-		int x, y;
-		x = view.center_x + view.dist * (v[0] / v[2]);
-		y = view.center_y + view.dist * (v[1] / v[2]);
-		r_buf[y * r_w + x] = 4;
+		R_DrawSurf (r_surfs + i);
 	}
 }
