@@ -1,3 +1,4 @@
+#include <math.h>
 #include <string.h>
 
 #include "cdefs.h"
@@ -111,6 +112,20 @@ LoadTex (struct tex_s *tex, const char *path)
 }
 
 
+static void
+AdjustGeometry (float x, float y, float z)
+{
+	int i;
+
+	for (i = 0; i < num_verts; i++)
+	{
+		r_verts[i][0] += x;
+		r_verts[i][1] += y;
+		r_verts[i][2] += z;
+	}
+}
+
+
 void
 R_SetupGeometry (void)
 {
@@ -158,10 +173,59 @@ R_SetupGeometry (void)
 	AddQuad (&tex_side, 2, 1, 5, 6); /* left */
 	AddQuad (&tex_floor, 0, 1, 2, 3); /* top */
 	AddQuad (&tex_floor, 7, 6, 5, 4); /* bottom */
+
+	AdjustGeometry (-48, 0, 128);
+}
+
+/* ================================================================== */
+
+#define FOV_X 90.0
+
+struct
+{
+	bool inited;
+
+	float center_x;
+	float center_y;
+
+	/* radians */
+	float fov_x;
+	float fov_y;
+
+	float dist;
+	float scale_y;
+} view;
+
+
+static void
+SetupView (void)
+{
+	if (view.inited)
+		return;
+	view.inited = true;
+
+	view.center_x = r_w / 2.0 - 0.5;
+	view.center_y = r_h / 2.0 - 0.5;
+
+	view.fov_x = FOV_X * (M_PI / 180.0);
+	view.dist = (r_w / 2.0) / tan(view.fov_x / 2.0);
+	view.fov_y = 2.0 * atan((r_h / 2.0) / view.dist);
 }
 
 
 void
 R_DrawGeometry (void)
 {
+	int i;
+
+	SetupView ();
+
+	for (i = 0; i < num_verts; i++)
+	{
+		const float *v = r_verts[i];
+		int x, y;
+		x = view.center_x + view.dist * (v[0] / v[2]);
+		y = view.center_y + view.dist * (v[1] / v[2]);
+		r_buf[y * r_w + x] = 4;
+	}
 }
