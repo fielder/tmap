@@ -17,6 +17,9 @@ extern void
 Vid_SetPalette (const uint8_t palette[768]);
 
 extern void
+R_Line (int x1, int y1, int x2, int y2, int c);
+
+extern void
 R_Refresh (void);
 
 /* rast.c */

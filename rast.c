@@ -260,6 +260,10 @@ struct
 
 	float dist;
 	float scale_y;
+
+	float forward[3];
+	float right[3];
+	float up[3];
 } view;
 
 
@@ -276,6 +280,16 @@ SetupView (void)
 	view.fov_x = FOV_X * (M_PI / 180.0);
 	view.dist = (r_w / 2.0) / tan(view.fov_x / 2.0);
 	view.fov_y = 2.0 * atan((r_h / 2.0) / view.dist);
+
+	view.right[0] = 1.0;
+	view.right[1] = 0.0;
+	view.right[2] = 0.0;
+	view.up[0] = 0.0;
+	view.up[1] = 1.0;
+	view.up[2] = 0.0;
+	view.forward[0] = 0.0;
+	view.forward[1] = 0.0;
+	view.forward[2] = 1.0;
 }
 
 
@@ -292,6 +306,41 @@ DrawPoint (const float v[3])
 static void
 DrawSurf (struct surf_s *s)
 {
+	int i;
+
+	if (Vec_Dot(s->normal, view.forward) - s->dist <= 0)
+		return;
+
+	for (i = 0; i < s->numedges; i++)
+	{
+		unsigned int edgenum = r_surfedges[s->firstedge + i];
+		int v1, v2;
+		float *a, *b;
+		float x1, y1, x2, y2;
+
+		if (edgenum & 0x80000000)
+		{
+			edgenum &= 0x7fffffff;
+			v1 = r_edges[edgenum].v[1];
+			v2 = r_edges[edgenum].v[0];
+		}
+		else
+		{
+			v1 = r_edges[edgenum].v[0];
+			v2 = r_edges[edgenum].v[1];
+		}
+
+		a = r_verts[v1];
+		b = r_verts[v2];
+
+		x1 = view.center_x + view.dist * (a[0] / a[2]);
+		y1 = view.center_y + view.dist * (a[1] / a[2]);
+
+		x2 = view.center_x + view.dist * (b[0] / b[2]);
+		y2 = view.center_y + view.dist * (b[1] / b[2]);
+
+		R_Line (x1, y1, x2, y2, 4);
+	}
 }
 
 
@@ -302,11 +351,11 @@ R_DrawGeometry (void)
 
 	SetupView ();
 
+/*
 	for (i = 0; i < num_verts; i++)
 		DrawPoint (r_verts[i]);
+*/
 
 	for (i = 0; i < num_surfs; i++)
-	{
 		DrawSurf (r_surfs + i);
-	}
 }
