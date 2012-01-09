@@ -112,7 +112,7 @@ Vid_Swap (void)
 
 
 static void
-R_DrawPal (void)
+DrawPal (void)
 {
 	int x, y;
 	uint8_t *dest = r_buf;
@@ -129,7 +129,7 @@ void
 R_Refresh (void)
 {
 	if (0)
-		R_DrawPal ();
+		DrawPal ();
 
 	R_DrawGeometry ();
 

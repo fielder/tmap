@@ -280,7 +280,7 @@ SetupView (void)
 
 
 static void
-R_DrawPoint (const float v[3])
+DrawPoint (const float v[3])
 {
 	int x, y;
 	x = view.center_x + view.dist * (v[0] / v[2]);
@@ -290,7 +290,7 @@ R_DrawPoint (const float v[3])
 
 
 static void
-R_DrawSurf (struct surf_s *s)
+DrawSurf (struct surf_s *s)
 {
 }
 
@@ -303,10 +303,10 @@ R_DrawGeometry (void)
 	SetupView ();
 
 	for (i = 0; i < num_verts; i++)
-		R_DrawPoint (r_verts[i]);
+		DrawPoint (r_verts[i]);
 
 	for (i = 0; i < num_surfs; i++)
 	{
-		R_DrawSurf (r_surfs + i);
+		DrawSurf (r_surfs + i);
 	}
 }
