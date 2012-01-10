@@ -306,10 +306,18 @@ struct
 	float up[3];
 } view;
 
-struct
+struct evert_s
 {
-	struct msurf_s *surfs[2];
-} edge_s; 
+	float u, v; /* screen coords */
+	float s, t; /* texel coords */
+	float zi;
+};
+
+
+struct edge_s
+{
+	int xxx;
+}; 
 
 
 static void
@@ -338,53 +346,42 @@ SetupView (void)
 }
 
 
-static void
-DrawPoint (const float v[3])
-{
-	int x, y;
-	x = view.center_x + view.dist * (v[0] / v[2]);
-	y = view.center_y + view.dist * (v[1] / v[2]);
-	r_buf[y * r_w + x] = 4;
-}
+static struct evert_s r_outverts[32];
+static int num_outverts;
 
 
 static void
 DrawSurf (struct msurf_s *s)
 {
+	const unsigned int *edgenums;
+	unsigned int edgenum;
 	int i;
+	int vnum;
+	const float *v;
+	struct evert_s *ov;
 
-	if (Vec_Dot(s->normal, view.forward) - s->dist <= PLANE_DIST_EPSILON)
+	if (Vec_Dot(s->normal, view.forward) - s->dist < PLANE_DIST_EPSILON)
 		return;
 
+	num_outverts = 0;
+
+	edgenums = r_surfedges + s->firstedge;
 	for (i = 0; i < s->numedges; i++)
 	{
-		unsigned int edgenum = r_surfedges[s->firstedge + i];
-		int v1, v2;
-		float *a, *b;
-		float x1, y1, x2, y2;
-
+		edgenum = edgenums[i];
 		if (edgenum & 0x80000000)
-		{
-			edgenum &= 0x7fffffff;
-			v1 = r_edges[edgenum].v[1];
-			v2 = r_edges[edgenum].v[0];
-		}
+			vnum = r_edges[edgenum & 0x7fffffff].v[1];
 		else
-		{
-			v1 = r_edges[edgenum].v[0];
-			v2 = r_edges[edgenum].v[1];
-		}
+			vnum = r_edges[edgenum].v[0];
+		v = r_verts[vnum];
 
-		a = r_verts[v1];
-		b = r_verts[v2];
+		ov = r_outverts + num_outverts++;
 
-		x1 = view.center_x + view.dist * (a[0] / a[2]);
-		y1 = view.center_y + view.dist * (a[1] / a[2]);
-
-		x2 = view.center_x + view.dist * (b[0] / b[2]);
-		y2 = view.center_y + view.dist * (b[1] / b[2]);
-
-		R_Line (x1, y1, x2, y2, 4);
+		ov->zi = 1.0 / v[2];
+		ov->u = view.center_x + view.dist * ov->zi * v[0];
+		ov->v = view.center_y + view.dist * ov->zi * v[1];
+		ov->s = 0;
+		ov->t = 0;
 	}
 }
 
@@ -395,11 +392,6 @@ R_DrawGeometry (void)
 	int i;
 
 	SetupView ();
-
-/*
-	for (i = 0; i < num_verts; i++)
-		DrawPoint (r_verts[i]);
-*/
 
 	for (i = 0; i < num_surfs; i++)
 		DrawSurf (r_surfs + i);
