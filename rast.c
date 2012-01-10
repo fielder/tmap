@@ -17,12 +17,12 @@ static struct tex_s tex_front;
 
 static uint8_t r_pal[768];
 
-struct edge_s
+struct medge_s
 {
 	unsigned short v[2];
 };
 
-struct surf_s
+struct msurf_s
 {
 	int firstedge;
 	int numedges;
@@ -39,16 +39,19 @@ struct surf_s
 static float r_verts[128][3];
 static int num_verts;
 
-static struct edge_s r_edges[128];
+static struct medge_s r_edges[128];
 static int num_edges;
 
-static struct surf_s r_surfs[16];
+static struct msurf_s r_surfs[16];
 static int num_surfs;
 
 static unsigned int r_surfedges[128];
 static int num_surfedges;
 
 /* ================================================================== */
+
+#define PLANE_DIST_EPSILON 0.01
+#define PLANE_NORMAL_EPSILON 0.00001
 
 static void
 Vec_Copy (const float src[3], float out[3])
@@ -114,6 +117,42 @@ Vec_Add (const float a[3], const float b[3], float out[3])
 	out[2] = a[2] + b[2];
 }
 
+
+static void
+Vec_Clear (float v[3])
+{
+	v[0] = v[1] = v[2] = 0.0;
+}
+
+
+static void
+Vec_SnapPlane (float normal[3], float *dist)
+{
+	int i;
+	float idist;
+
+	for (i = 0; i < 3; i++)
+	{
+		if (fabs(normal[i] - 1.0) < PLANE_NORMAL_EPSILON)
+		{
+			Vec_Clear (normal);
+			normal[i] = 1.0;
+			break;
+		}
+		else if (fabs(normal[i] - -1.0) < PLANE_NORMAL_EPSILON)
+		{
+			Vec_Clear (normal);
+			normal[i] = -1.0;
+			break;
+		}
+	}
+
+	idist = floor (*dist + 0.5);
+	if (fabs(*dist - idist) < PLANE_DIST_EPSILON)
+		*dist = idist;
+}
+
+
 /* ================================================================== */
 
 static void
@@ -138,7 +177,7 @@ AddEdge (int v1, int v2)
 static void
 AddSurfEdge (int v1, int v2)
 {
-	const struct edge_s *e;
+	const struct medge_s *e;
 	int i;
 
 	for (i = 0, e = r_edges; i < num_edges; i++, e++)
@@ -160,7 +199,7 @@ AddSurfEdge (int v1, int v2)
 static void
 AddQuad (struct tex_s *tex, int v1, int v2, int v3, int v4)
 {
-	struct surf_s *s;
+	struct msurf_s *s;
 	float a[3], b[3];
 
 	s = &r_surfs[num_surfs++];
@@ -179,6 +218,7 @@ AddQuad (struct tex_s *tex, int v1, int v2, int v3, int v4)
 	Vec_Cross (a, b, s->normal);
 	Vec_Normalize (s->normal);
 	s->dist = Vec_Dot (s->normal, r_verts[v1]);
+	Vec_SnapPlane (s->normal, &s->dist);
 }
 
 
@@ -207,7 +247,7 @@ R_SetupGeometry (void)
 	num_surfedges = 0;
 
 	dx = -48;
-	dy = 0;
+	dy = -15;
 	dz = 128;
 
 	x = tex_front.w / 2.0;
@@ -266,6 +306,11 @@ struct
 	float up[3];
 } view;
 
+struct
+{
+	struct msurf_s *surfs[2];
+} edge_s; 
+
 
 static void
 SetupView (void)
@@ -304,11 +349,11 @@ DrawPoint (const float v[3])
 
 
 static void
-DrawSurf (struct surf_s *s)
+DrawSurf (struct msurf_s *s)
 {
 	int i;
 
-	if (Vec_Dot(s->normal, view.forward) - s->dist <= 0)
+	if (Vec_Dot(s->normal, view.forward) - s->dist <= PLANE_DIST_EPSILON)
 		return;
 
 	for (i = 0; i < s->numedges; i++)
