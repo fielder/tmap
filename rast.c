@@ -54,6 +54,13 @@ static int num_surfedges;
 #define PLANE_NORMAL_EPSILON 0.00001
 
 static void
+Vec_Clear (float v[3])
+{
+	v[0] = v[1] = v[2] = 0.0;
+}
+
+
+static void
 Vec_Copy (const float src[3], float out[3])
 {
 	out[0] = src[0];
@@ -85,11 +92,7 @@ Vec_Normalize (float v[3])
 
 	len = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 	if (len == 0)
-	{
-		v[0] = 0.0;
-		v[1] = 0.0;
-		v[2] = 0.0;
-	}
+		Vec_Clear (v);
 	else
 	{
 		len = 1.0 / len;
@@ -115,13 +118,6 @@ Vec_Add (const float a[3], const float b[3], float out[3])
 	out[0] = a[0] + b[0];
 	out[1] = a[1] + b[1];
 	out[2] = a[2] + b[2];
-}
-
-
-static void
-Vec_Clear (float v[3])
-{
-	v[0] = v[1] = v[2] = 0.0;
 }
 
 
@@ -306,7 +302,7 @@ struct
 	float up[3];
 } view;
 
-struct evert_s
+struct outvert_s
 {
 	float u, v; /* screen coords */
 	float s, t; /* texel coords */
@@ -314,9 +310,10 @@ struct evert_s
 };
 
 
-struct edge_s
+struct outedge_s
 {
-	int xxx;
+	struct outedge_s *next;
+	int u, u_step;
 }; 
 
 
@@ -346,8 +343,113 @@ SetupView (void)
 }
 
 
-static struct evert_s r_outverts[32];
+static struct outvert_s p_outverts[32];
 static int num_outverts;
+
+static struct outedge_s p_outedges[32];
+static int num_outedges;
+static struct outedge_s edges_l, edges_r;
+
+static float p_min_v, p_max_v;
+static int p_topi;
+
+
+static void
+GenerateSpans (void)
+{
+}
+
+
+//FIXME: We're going to have to snap u/v to integers eventually
+//	Will require adjusting non-integer values to match the shift
+static void
+ScanEdges (void)
+{
+	struct outvert_s *ov, *nv;
+	int i;
+	int bottomi;
+
+	struct outedge_s *prev_le, *prev_re;
+	struct outedge_s *oe;
+	int nexti;
+
+	float u_step;
+
+	/* find top and bottom verts */
+	p_min_v = 99999.0;
+	p_max_v = -99999.0;
+	for (i = 0, ov = p_outverts; i < num_outverts; i++, ov++)
+	{
+		if (ov->v < p_min_v)
+		{
+			p_min_v = ov->v;
+			p_topi = i;
+		}
+		if (ov->v > p_max_v)
+		{
+			p_max_v = ov->v;
+			bottomi = i;
+		}
+	}
+
+	num_outedges = 0;
+
+	/* generate left edges */
+	edges_l.next = NULL;
+	prev_le = &edges_l;
+	i = p_topi;
+	ov = &p_outverts[i];
+	while (i != bottomi)
+	{
+		/* find next vert */
+		if ((nexti = i - 1) == -1)
+			nexti = num_outverts - 1;
+		nv = &p_outverts[nexti];
+
+		/* get a new edge & link in */
+		oe = &p_outedges[num_outedges++];
+		oe->next = NULL;
+		prev_le->next = oe;
+		prev_le = oe;
+
+		/* calculate gradient */
+		oe->u = ov->u * 0x100000;
+		u_step = (nv->u - ov->u) / (nv->v - ov->v);
+		oe->u_step = u_step * 0x100000;
+
+		/* go to next vert */
+		i = nexti;
+		ov = nv;
+	}
+
+	/* generate right edges */
+	edges_r.next = NULL;
+	prev_re = &edges_r;
+	i = p_topi;
+	ov = &p_outverts[i];
+	while (i != bottomi)
+	{
+		/* find next vert */
+		if ((nexti = i + 1) == num_outverts)
+			nexti = 0;
+		nv = &p_outverts[nexti];
+
+		/* get a new edge & link in */
+		oe = &p_outedges[num_outedges++];
+		oe->next = NULL;
+		prev_re->next = oe;
+		prev_re = oe;
+
+		/* calculate gradient */
+		oe->u = ov->u * 0x100000;
+		u_step = (nv->u - ov->u) / (nv->v - ov->v);
+		oe->u_step = u_step * 0x100000;
+
+		/* go to next vert */
+		i = nexti;
+		ov = nv;
+	}
+}
 
 
 static void
@@ -358,7 +460,7 @@ DrawSurf (struct msurf_s *s)
 	int i;
 	int vnum;
 	const float *v;
-	struct evert_s *ov;
+	struct outvert_s *ov;
 
 	if (Vec_Dot(s->normal, view.forward) - s->dist < PLANE_DIST_EPSILON)
 		return;
@@ -375,7 +477,7 @@ DrawSurf (struct msurf_s *s)
 			vnum = r_edges[edgenum].v[0];
 		v = r_verts[vnum];
 
-		ov = r_outverts + num_outverts++;
+		ov = p_outverts + num_outverts++;
 
 		ov->zi = 1.0 / v[2];
 		ov->u = view.center_x + view.dist * ov->zi * v[0];
@@ -383,6 +485,9 @@ DrawSurf (struct msurf_s *s)
 		ov->s = 0;
 		ov->t = 0;
 	}
+
+	ScanEdges ();
+	GenerateSpans ();
 }
 
 
