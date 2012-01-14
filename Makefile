@@ -7,7 +7,8 @@ LDFLAGS = -lm $(SDLLDFLAGS)
 OBJDIR = obj
 TARGET = $(OBJDIR)/tmap
 
-OBJS =	$(OBJDIR)/tmap.o \
+OBJS =	$(OBJDIR)/vec.o \
+	$(OBJDIR)/tmap.o \
 	$(OBJDIR)/render.o \
 	$(OBJDIR)/rast.o \
 	$(OBJDIR)/pcx.o
@@ -23,6 +24,8 @@ $(TARGET): $(OBJS)
 
 ########################################################################
 
+$(OBJDIR)/vec.o: vec.c
+	$(CC) -c $(CFLAGS) $? -o $@
 $(OBJDIR)/tmap.o: tmap.c
 	$(CC) -c $(CFLAGS) $? -o $@
 $(OBJDIR)/render.o: render.c
