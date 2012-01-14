@@ -9,6 +9,7 @@
 #include "render.h"
 
 static SDL_Surface *sdl_surf = NULL;
+static uint8_t pal[768];
 
 int r_w = 512;
 int r_h = 384;
@@ -68,7 +69,7 @@ R_Shutdown (void)
 void
 R_LoadTex (struct tex_s *tex, const char *path)
 {
-	tex->pixels = LoadPCX (path, &tex->w, &tex->h, NULL);
+	tex->pixels = LoadPCX (path, &tex->w, &tex->h, pal);
 }
 
 
@@ -232,6 +233,14 @@ DrawPal (void)
 void
 R_Refresh (void)
 {
+	static bool pal_set = false;
+
+	if (!pal_set)
+	{
+		Vid_SetPalette (pal);
+		pal_set = true;
+	}
+
 	if (0)
 		DrawPal ();
 
