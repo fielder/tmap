@@ -1,8 +1,11 @@
 #include <stdlib.h>
+#include <math.h>
 
 #include <SDL.h>
 
 #include "cdefs.h"
+#include "pcx.h"
+#include "geom.h"
 #include "render.h"
 
 static SDL_Surface *sdl_surf = NULL;
@@ -10,6 +13,29 @@ static SDL_Surface *sdl_surf = NULL;
 int r_w = 512;
 int r_h = 384;
 uint8_t *r_buf = NULL;
+struct view_s view;
+
+
+static void
+SetupView (int w, int h, float fov_x)
+{
+	view.center_x = w / 2.0 - 0.5;
+	view.center_y = h / 2.0 - 0.5;
+
+	view.fov_x = fov_x;
+	view.dist = (w / 2.0) / tan(view.fov_x / 2.0);
+	view.fov_y = 2.0 * atan((h / 2.0) / view.dist);
+
+	view.right[0] = 1.0;
+	view.right[1] = 0.0;
+	view.right[2] = 0.0;
+	view.up[0] = 0.0;
+	view.up[1] = 1.0;
+	view.up[2] = 0.0;
+	view.forward[0] = 0.0;
+	view.forward[1] = 0.0;
+	view.forward[2] = 1.0;
+}
 
 
 void
@@ -19,9 +45,12 @@ R_Init (void)
 
 	sdl_surf = SDL_SetVideoMode (r_w, r_h, 8,
 				SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_HWPALETTE);
+	//TODO: if sdl surface has contiguous rows, don't need this buffer
 	r_buf = malloc (r_w * r_h);
 
-	R_SetupGeometry ();
+	SetupView (r_w, r_h, 90 * (M_PI / 180.0));
+
+	Geom_Setup ();
 }
 
 
@@ -33,6 +62,13 @@ R_Shutdown (void)
 
 	SDL_FreeSurface (sdl_surf);
 	sdl_surf = NULL;
+}
+
+
+void
+R_LoadTex (struct tex_s *tex, const char *path)
+{
+	tex->pixels = LoadPCX (path, &tex->w, &tex->h, NULL);
 }
 
 

@@ -10,6 +10,7 @@ TARGET = $(OBJDIR)/tmap
 OBJS =	$(OBJDIR)/vec.o \
 	$(OBJDIR)/tmap.o \
 	$(OBJDIR)/render.o \
+	$(OBJDIR)/geom.o \
 	$(OBJDIR)/rast.o \
 	$(OBJDIR)/pcx.o
 
@@ -29,6 +30,8 @@ $(OBJDIR)/vec.o: vec.c
 $(OBJDIR)/tmap.o: tmap.c
 	$(CC) -c $(CFLAGS) $? -o $@
 $(OBJDIR)/render.o: render.c
+	$(CC) -c $(CFLAGS) $? -o $@
+$(OBJDIR)/geom.o: geom.c
 	$(CC) -c $(CFLAGS) $? -o $@
 $(OBJDIR)/rast.o: rast.c
 	$(CC) -c $(CFLAGS) $? -o $@
