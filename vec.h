@@ -29,9 +29,9 @@ extern void
 Vec_SnapPlane (float normal[3], float *dist);
 
 extern void
-Vec_MakeNormal (float v1[3],
-		float v2[3],
-		float v3[3],
+Vec_MakeNormal (const float v1[3],
+		const float v2[3],
+		const float v3[3],
 		float normal[3],
 		float *dist);
 
