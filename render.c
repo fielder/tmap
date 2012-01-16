@@ -42,6 +42,12 @@ SetupView (int w, int h, float fov_x)
 void
 R_Init (void)
 {
+	if (r_w > MAX_W || r_h > MAX_H)
+	{
+		r_w = MAX_W;
+		r_h = MAX_H;
+	}
+
 	SDL_InitSubSystem (SDL_INIT_VIDEO);
 
 	sdl_surf = SDL_SetVideoMode (r_w, r_h, 8,

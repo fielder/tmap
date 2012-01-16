@@ -25,6 +25,9 @@ struct view_s
 };
 
 /* render.c */
+#define MAX_W 1600
+#define MAX_H 1200
+
 extern int r_w;
 extern int r_h;
 extern uint8_t *r_buf;

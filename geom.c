@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "vec.h"
+#include "render.h"
 #include "geom.h"
 
 float g_verts[MAX_VERTEXES][3];
@@ -96,7 +97,7 @@ Geom_Setup (void)
 	g_numsurfedges = 0;
 
 	dx = -48;
-	dy = -15;
+	dy = 16;
 	dz = 128;
 
 	x = 20;
