@@ -61,7 +61,7 @@ Vec_Normalize (float v[3])
 	float len;
 
 	len = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-	if (len == 0)
+	if (len == 0.0)
 	{
 		v[0] = 0.0;
 		v[1] = 0.0;
@@ -102,4 +102,26 @@ Vec_SnapPlane (float normal[3], float *dist)
 	idist = floor (*dist + 0.5);
 	if (fabs(*dist - idist) < PLANE_DIST_EPSILON)
 		*dist = idist;
+}
+
+
+void
+Vec_MakeNormal (float v1[3],
+		float v2[3],
+		float v3[3],
+		float normal[3],
+		float *dist)
+{
+	float a[3], b[3];
+
+	Vec_Subtract (v2, v1, a);
+	Vec_Subtract (v3, v1, b);
+
+	Vec_Cross (a, b, normal);
+
+	Vec_Normalize (normal);
+
+	*dist = Vec_Dot (normal, v1);
+
+	Vec_SnapPlane (normal, dist);
 }
