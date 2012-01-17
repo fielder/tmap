@@ -62,7 +62,6 @@ static void
 AddQuad (const char *texpath, int v1, int v2, int v3, int v4)
 {
 	struct msurf_s *s;
-	float a[3], b[3];
 
 	s = &g_surfs[g_numsurfs++];
 	memset (s, 0, sizeof(*s));
@@ -74,12 +73,11 @@ AddQuad (const char *texpath, int v1, int v2, int v3, int v4)
 	AddSurfEdge (v4, v1);
 	s->numedges = g_numsurfedges - s->firstedge;
 
-	Vec_Subtract (g_verts[v2], g_verts[v1], a);
-	Vec_Subtract (g_verts[v3], g_verts[v1], b);
-	Vec_Cross (a, b, s->normal);
-	Vec_Normalize (s->normal);
-	s->dist = Vec_Dot (s->normal, g_verts[v1]);
-	Vec_SnapPlane (s->normal, &s->dist);
+	Vec_MakeNormal (g_verts[v1],
+			g_verts[v2],
+			g_verts[v3],
+			s->normal,
+			&s->dist);
 
 	R_LoadTex (&s->tex, texpath);
 }
