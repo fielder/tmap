@@ -94,7 +94,9 @@ Geom_Setup (void)
 	g_numsurfs = 0;
 	g_numsurfedges = 0;
 
-	dx = -48;
+	/* ================================ */
+
+	dx = -64;
 	dy = 16;
 	dz = 128;
 
@@ -129,4 +131,56 @@ Geom_Setup (void)
 	AddQuad ("WALL42_3.pcx", 2, 6, 5, 1); /* left */
 	AddQuad ("CEIL5_2.pcx", 0, 3, 2, 1); /* top */
 	AddQuad ("CEIL5_2.pcx", 7, 4, 5, 6); /* bottom */
+
+	/* ================================ */
+
+	dx = 128;
+	dy = 128;
+	dz = 256;
+
+	x = 32;
+	y = 32;
+	z = 32;
+	AddVertex (dx +  x, dy +  y, dz +  z); /* top verts */
+	AddVertex (dx + -x, dy +  y, dz +  z);
+	AddVertex (dx + -x, dy +  y, dz + -z);
+	AddVertex (dx +  x, dy +  y, dz + -z);
+	AddVertex (dx +  x, dy + -y, dz +  z); /* bottom verts */
+	AddVertex (dx + -x, dy + -y, dz +  z);
+	AddVertex (dx + -x, dy + -y, dz + -z);
+	AddVertex (dx +  x, dy + -y, dz + -z);
+
+	AddEdge (8, 9); /* top */
+	AddEdge (9, 10);
+	AddEdge (10, 11);
+	AddEdge (11, 8);
+	AddEdge (8, 12); /* sides */
+	AddEdge (9, 13);
+	AddEdge (10, 14);
+	AddEdge (11, 15);
+	AddEdge (12, 13); /* bottom */
+	AddEdge (13, 14);
+	AddEdge (14, 15);
+	AddEdge (15, 12);
+
+	AddQuad ("W28_5.pcx", 11, 15, 14, 10); /* front */
+	AddQuad ("W28_5.pcx", 9, 13, 12, 8); /* back */
+	AddQuad ("W28_5.pcx", 8, 12, 15, 11); /* right */
+	AddQuad ("W28_5.pcx", 10, 14, 13, 9); /* left */
+	AddQuad ("W28_5.pcx", 8, 11, 10, 9); /* top */
+	AddQuad ("W28_5.pcx", 15, 12, 13, 14); /* bottom */
+
+	/* ================================ */
+
+	AddVertex (8, 0, 512);
+	AddVertex (8, -200, 512);
+	AddVertex (-8, -200, 512);
+	AddVertex (-8, 0, 512);
+
+	AddEdge (16, 17);
+	AddEdge (17, 18);
+	AddEdge (18, 19);
+	AddEdge (19, 16);
+
+	AddQuad ("AGB128_1.pcx", 16, 17, 18, 19); /* front */
 }
