@@ -51,6 +51,8 @@ extern void
 R_Refresh (void);
 
 /* rast.c */
+extern float r_viewpos[3];
+
 extern void
 R_DrawGeometry (void);
 

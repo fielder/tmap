@@ -241,6 +241,8 @@ R_Refresh (void)
 {
 	static bool pal_set = false;
 
+	memset (r_buf, 0, r_w * r_h);
+
 	if (!pal_set)
 	{
 		Vid_SetPalette (pal);

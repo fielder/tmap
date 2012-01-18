@@ -20,6 +20,7 @@ struct outvert_s
 	float zi;
 };
 
+float r_viewpos[3];
 
 static struct outvert_s p_outverts[MAX_SURF_VERTS];
 static int num_outverts;
@@ -125,11 +126,11 @@ DrawSurf (struct msurf_s *s)
 	unsigned int edgenum;
 	int i;
 	int vnum;
-	const float *v;
+	float v[3];
 	struct outvert_s *ov;
 	float min_v, max_v;
 
-	if (Vec_Dot(s->normal, view.forward) - s->dist < PLANE_DIST_EPSILON)
+	if (Vec_Dot(s->normal, r_viewpos) - s->dist < PLANE_DIST_EPSILON)
 		return;
 
 	min_v = 99999.0;
@@ -145,7 +146,7 @@ DrawSurf (struct msurf_s *s)
 			vnum = g_edges[edgenum & 0x7fffffff].v[1];
 		else
 			vnum = g_edges[edgenum].v[0];
-		v = g_verts[vnum];
+		Vec_Subtract (g_verts[vnum], r_viewpos, v);
 
 		ov = p_outverts + num_outverts++;
 
@@ -179,7 +180,7 @@ DrawSurf (struct msurf_s *s)
 		struct span_s *span;
 		for (span = spans; span != p_span; span++)
 			memset (r_buf + span->v * r_w + span->u,
-				(uint32_t)s >> 4,
+				(uintptr_t)s >> 4,
 				span->count);
 	}
 }
