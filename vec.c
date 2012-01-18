@@ -22,6 +22,15 @@ Vec_Copy (const float src[3], float out[3])
 
 
 void
+Vec_Scale (float v[3], float s)
+{
+	v[0] *= s;
+	v[1] *= s;
+	v[2] *= s;
+}
+
+
+void
 Vec_Add (const float a[3], const float b[3], float out[3])
 {
 	out[0] = a[0] + b[0];

@@ -11,6 +11,9 @@ extern void
 Vec_Copy (const float src[3], float out[3]);
 
 extern void
+Vec_Scale (float v[3], float s);
+
+extern void
 Vec_Add (const float a[3], const float b[3], float out[3]);
 
 extern void
