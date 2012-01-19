@@ -19,9 +19,13 @@ struct view_s
 
 	float dist;
 
-	float forward[3];
+	float pos[3];
+
+	float angles[3];
+
 	float right[3];
 	float up[3];
+	float forward[3];
 };
 
 /* render.c */
@@ -51,7 +55,6 @@ extern void
 R_Refresh (void);
 
 /* rast.c */
-extern float r_viewpos[3];
 
 extern void
 R_DrawGeometry (void);

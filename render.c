@@ -4,6 +4,7 @@
 #include <SDL.h>
 
 #include "cdefs.h"
+#include "vec.h"
 #include "pcx.h"
 #include "geom.h"
 #include "render.h"
@@ -27,14 +28,16 @@ SetupView (int w, int h, float fov_x)
 	view.dist = (w / 2.0) / tan(view.fov_x / 2.0);
 	view.fov_y = 2.0 * atan((h / 2.0) / view.dist);
 
+	Vec_Clear (view.pos);
+	Vec_Clear (view.angles);
+
+	Vec_Clear (view.right);
 	view.right[0] = 1.0;
-	view.right[1] = 0.0;
-	view.right[2] = 0.0;
-	view.up[0] = 0.0;
+
+	Vec_Clear (view.up);
 	view.up[1] = 1.0;
-	view.up[2] = 0.0;
-	view.forward[0] = 0.0;
-	view.forward[1] = 0.0;
+
+	Vec_Clear (view.forward);
 	view.forward[2] = 1.0;
 }
 

@@ -20,8 +20,6 @@ struct outvert_s
 	float zi;
 };
 
-float r_viewpos[3];
-
 static struct outvert_s p_outverts[MAX_SURF_VERTS];
 static int num_outverts;
 
@@ -130,7 +128,7 @@ DrawSurf (struct msurf_s *s)
 	struct outvert_s *ov;
 	float min_v, max_v;
 
-	if (Vec_Dot(s->normal, r_viewpos) - s->dist < PLANE_DIST_EPSILON)
+	if (Vec_Dot(s->normal, view.pos) - s->dist < PLANE_DIST_EPSILON)
 		return;
 
 	min_v = 99999.0;
@@ -146,7 +144,9 @@ DrawSurf (struct msurf_s *s)
 			vnum = g_edges[edgenum & 0x7fffffff].v[1];
 		else
 			vnum = g_edges[edgenum].v[0];
-		Vec_Subtract (g_verts[vnum], r_viewpos, v);
+
+		Vec_Subtract (g_verts[vnum], view.pos, v);
+		//TODO: rotate into view
 
 		ov = p_outverts + num_outverts++;
 
@@ -190,6 +190,8 @@ void
 R_DrawGeometry (void)
 {
 	int i;
+
+	//TODO: set up view vecs
 
 	for (i = 0; i < g_numsurfs; i++)
 		DrawSurf (&g_surfs[i]);
