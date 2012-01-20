@@ -134,3 +134,23 @@ Vec_MakeNormal (const float v1[3],
 
 	Vec_SnapPlane (normal, dist);
 }
+
+
+int
+Vec_BoxPlaneSide (const struct plane_s *plane, float mins[3], float maxs[3])
+{
+	if (plane->type < PLANE_NEAR_X)
+	{
+		float a = plane->normal[plane->type] * plane->dist;
+		if (a <= mins[plane->type])
+			return (plane->signbits >> plane->type) & 0x1;
+		else if (a >= maxs[plane->type])
+			return ((plane->signbits >> plane->type) & 0x1) ^ 0x1;
+		else
+			return SIDE_CROSS;
+	}
+	else
+	{
+		//TODO: ...
+	}
+}
