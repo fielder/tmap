@@ -175,8 +175,10 @@ Vec_AnglesVectors (	const float angles[3],
 	cy = cos (angles[YAW]);
 	sy = sin (angles[YAW]);
 
-	//TODO: any common sub-expressions in here ?
+	//TODO: any common sub-expressions here ?
 
+	/* X * Y * Z */
+/*
 	right[0] = cy * cr;
 	right[1] = sp * sy * cr - cp * sr;
 	right[2] = cp * sy * cr + sp * sr;
@@ -188,4 +190,18 @@ Vec_AnglesVectors (	const float angles[3],
 	forward[0] = -sy;
 	forward[1] = sp * cy;
 	forward[2] = cp * cy;
+*/
+
+	/* Z * Y * X */
+	right[0] = cr * cy;
+	right[1] = sr * cy;
+	right[2] = -sy;
+
+	up[0] = cr * sy * sp - sr * cp;
+	up[1] = cr * cp + sr * sy * sp;
+	up[2] = cy * sp;
+
+	forward[0] = sr * sp + cr * sy * cp;
+	forward[1] = sr * sy * cp - cr * sp;
+	forward[2] = cy * cp;
 }

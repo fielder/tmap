@@ -21,7 +21,7 @@ struct view_s
 
 	float pos[3];
 
-	float angles[3];
+	float angles[3]; /* radians */
 
 	float right[3];
 	float up[3];
