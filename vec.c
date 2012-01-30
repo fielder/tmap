@@ -154,3 +154,38 @@ Vec_BoxPlaneSide (const struct plane_s *plane, float mins[3], float maxs[3])
 		//TODO: ...
 	}
 }
+
+
+void
+Vec_AnglesVectors (	const float angles[3],
+			float right[3],
+			float up[3],
+			float forward[3])
+{
+	double cr, sr;
+	double cp, sp;
+	double cy, sy;
+
+	cr = cos (angles[ROLL]);
+	sr = sin (angles[ROLL]);
+
+	cp = cos (angles[PITCH]);
+	sp = sin (angles[PITCH]);
+
+	cy = cos (angles[YAW]);
+	sy = sin (angles[YAW]);
+
+	//TODO: any common sub-expressions in here ?
+
+	right[0] = cy * cr;
+	right[1] = sp * sy * cr - cp * sr;
+	right[2] = cp * sy * cr + sp * sr;
+
+	up[0] = cy * sr;
+	up[1] = sp * sy * sr + cp * cr;
+	up[2] = cp * sy * sr - sp * cr;
+
+	forward[0] = -sy;
+	forward[1] = sp * cy;
+	forward[2] = cp * cy;
+}

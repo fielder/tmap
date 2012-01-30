@@ -71,4 +71,10 @@ Vec_MakeNormal (const float v1[3],
 extern int
 Vec_BoxPlaneSide (const struct plane_s *plane, float mins[3], float maxs[3]);
 
+extern void
+Vec_AnglesVectors (	const float angles[3],
+			float right[3],
+			float up[3],
+			float forward[3]);
+
 #endif /* __VEC_H__ */
