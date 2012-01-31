@@ -10,8 +10,21 @@
 static bool quit = false;
 static float moves[3];
 static bool dragging = false;
-#define SPEED 32
+static float speed_mult = 1.0;
 
+#define SPEED 32.0
+
+#if 1
+	#define KEY_FORWARD	'.'
+	#define KEY_BACK	'e'
+	#define KEY_LEFT	'o'
+	#define KEY_RIGHT	'u'
+#else
+	#define KEY_FORWARD	SDLK_UP
+	#define KEY_BACK	SDLK_DOWN
+	#define KEY_LEFT	SDLK_LEFT
+	#define KEY_RIGHT	SDLK_RIGHT
+#endif
 
 void
 RunInput (float frametime)
@@ -26,35 +39,45 @@ RunInput (float frametime)
 		switch (sdlev.type)
 		{
 			case SDL_MOUSEBUTTONDOWN:
-				dragging = true;
+				if (sdlev.button.button == 1)
+					dragging = true;
+				else if (sdlev.button.button == 3)
+					moves[1]++;
 				break;
 
 			case SDL_MOUSEBUTTONUP:
-				dragging = false;
+				if (sdlev.button.button == 1)
+					dragging = false;
+				else if (sdlev.button.button == 3)
+					moves[1]--;
 				break;
 
 			case SDL_KEYDOWN:
-				if (sdlev.key.keysym.sym == SDLK_UP)
+				if (sdlev.key.keysym.sym == KEY_FORWARD)
 					moves[2]++;
-				else if (sdlev.key.keysym.sym == SDLK_DOWN)
+				else if (sdlev.key.keysym.sym == KEY_BACK)
 					moves[2]--;
-				else if (sdlev.key.keysym.sym == SDLK_LEFT)
+				else if (sdlev.key.keysym.sym == KEY_LEFT)
 					moves[0]--;
-				else if (sdlev.key.keysym.sym == SDLK_RIGHT)
+				else if (sdlev.key.keysym.sym == KEY_RIGHT)
 					moves[0]++;
+				else if (sdlev.key.keysym.sym == SDLK_LSHIFT)
+					speed_mult = 1.5;
 				break;
 
 			case SDL_KEYUP:
 				if (sdlev.key.keysym.sym == SDLK_ESCAPE)
 					quit = true;
-				else if (sdlev.key.keysym.sym == SDLK_UP)
+				else if (sdlev.key.keysym.sym == KEY_FORWARD)
 					moves[2]--;
-				else if (sdlev.key.keysym.sym == SDLK_DOWN)
+				else if (sdlev.key.keysym.sym == KEY_BACK)
 					moves[2]++;
-				else if (sdlev.key.keysym.sym == SDLK_LEFT)
+				else if (sdlev.key.keysym.sym == KEY_LEFT)
 					moves[0]++;
-				else if (sdlev.key.keysym.sym == SDLK_RIGHT)
+				else if (sdlev.key.keysym.sym == KEY_RIGHT)
 					moves[0]--;
+				else if (sdlev.key.keysym.sym == SDLK_LSHIFT)
+					speed_mult = 1.0;
 				else if (sdlev.key.keysym.sym == 'v')
 				{
 					printf("right: (%g, %g, %g)\n",
@@ -69,6 +92,13 @@ RunInput (float frametime)
 						view.forward[0],
 						view.forward[1],
 						view.forward[2]);
+				}
+				else if (sdlev.key.keysym.sym == 'p')
+				{
+					printf (" %g, %g, %g\n",
+						view.pos[0],
+						view.pos[1],
+						view.pos[2]);
 				}
 				break;
 
@@ -99,12 +129,19 @@ RunInput (float frametime)
 
 	{
 		float v[3];
-		Vec_Copy (view.forward, v);
-		Vec_Scale (v, moves[2] * SPEED * frametime);
-		Vec_Add (view.pos, v, view.pos);
+
+		Vec_Clear (v);
 
 		Vec_Copy (view.right, v);
-		Vec_Scale (v, moves[0] * SPEED * frametime);
+		Vec_Scale (v, moves[0] * SPEED * speed_mult * frametime);
+		Vec_Add (view.pos, v, view.pos);
+
+		Vec_Copy (view.up, v);
+		Vec_Scale (v, moves[1] * SPEED * speed_mult * frametime);
+		Vec_Add (view.pos, v, view.pos);
+
+		Vec_Copy (view.forward, v);
+		Vec_Scale (v, moves[2] * SPEED * speed_mult * frametime);
 		Vec_Add (view.pos, v, view.pos);
 	}
 
