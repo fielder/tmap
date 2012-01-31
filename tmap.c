@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include <SDL.h>
 
@@ -30,9 +31,11 @@ void
 RunInput (float frametime)
 {
 	SDL_Event sdlev;
-	int mouse[2];
+	int mouse_delt[2];
+	float v[3];
+	int i;
 
-	mouse[0] = mouse[1] = 0;
+	mouse_delt[0] = mouse_delt[1] = 0;
 
 	while (SDL_PollEvent(&sdlev))
 	{
@@ -62,7 +65,7 @@ RunInput (float frametime)
 				else if (sdlev.key.keysym.sym == KEY_RIGHT)
 					moves[0]++;
 				else if (sdlev.key.keysym.sym == SDLK_LSHIFT)
-					speed_mult = 1.5;
+					speed_mult = 2.0;
 				break;
 
 			case SDL_KEYUP:
@@ -100,11 +103,18 @@ RunInput (float frametime)
 						view.pos[1],
 						view.pos[2]);
 				}
+				else if (sdlev.key.keysym.sym == 'a')
+				{
+					printf (" %g, %g, %g\n",
+						view.angles[0],
+						view.angles[1],
+						view.angles[2]);
+				}
 				break;
 
 			case SDL_MOUSEMOTION:
-				mouse[0] = sdlev.motion.xrel;
-				mouse[1] = sdlev.motion.yrel;
+				mouse_delt[0] = sdlev.motion.xrel;
+				mouse_delt[1] = sdlev.motion.yrel;
 				break;
 
 			case SDL_QUIT:
@@ -116,35 +126,40 @@ RunInput (float frametime)
 		}
 	}
 
+	/* rotate camera with mouse */
 	if (dragging)
 	{
 		float rads;
 
-		rads = view.fov_x * (mouse[0] / (float)r_w);
+		rads = view.fov_x * (mouse_delt[0] / (float)r_w);
 		view.angles[YAW] += rads;
 
-		rads = view.fov_y * (mouse[1] / (float)r_h);
+		rads = view.fov_y * (mouse_delt[1] / (float)r_h);
 		view.angles[PITCH] += rads;
 	}
 
-	{
-		float v[3];
+	/* restrict camera angles */
+	if (view.angles[PITCH] > M_PI / 2.0)
+		view.angles[PITCH] = M_PI / 2.0;
+	if (view.angles[PITCH] < -M_PI / 2.0)
+		view.angles[PITCH] = -M_PI / 2.0;
 
-		Vec_Clear (v);
+	/* move camera */
+	Vec_Clear (v);
 
-		Vec_Copy (view.right, v);
-		Vec_Scale (v, moves[0] * SPEED * speed_mult * frametime);
-		Vec_Add (view.pos, v, view.pos);
+	Vec_Copy (view.right, v);
+	Vec_Scale (v, moves[0] * SPEED * speed_mult * frametime);
+	Vec_Add (view.pos, v, view.pos);
 
-		Vec_Copy (view.up, v);
-		Vec_Scale (v, moves[1] * SPEED * speed_mult * frametime);
-		Vec_Add (view.pos, v, view.pos);
+	Vec_Copy (view.up, v);
+	Vec_Scale (v, moves[1] * SPEED * speed_mult * frametime);
+	Vec_Add (view.pos, v, view.pos);
 
-		Vec_Copy (view.forward, v);
-		Vec_Scale (v, moves[2] * SPEED * speed_mult * frametime);
-		Vec_Add (view.pos, v, view.pos);
-	}
+	Vec_Copy (view.forward, v);
+	Vec_Scale (v, moves[2] * SPEED * speed_mult * frametime);
+	Vec_Add (view.pos, v, view.pos);
 
+	/* make view vectors from camera angles */
 	Vec_AnglesVectors (view.angles, view.right, view.up, view.forward);
 }
 
