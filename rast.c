@@ -60,6 +60,9 @@ FinishSpans (void)
 			while (itop < ibot)
 			{
 				p_span->count = (u >> 16) - p_span->u;
+//FIXME: we see -1 length spans when the view is nearly right on the plane
+				if (p_span->count < 0)
+					p_span->count = 0;
 				u += step_u;
 				p_span++;
 				itop++;
@@ -124,7 +127,7 @@ DrawSurf (struct msurf_s *s)
 	unsigned int edgenum;
 	int i;
 	int vnum;
-	float v[3];
+	float transformed[3], v[3];
 	struct outvert_s *ov;
 	float min_v, max_v;
 
@@ -145,8 +148,10 @@ DrawSurf (struct msurf_s *s)
 		else
 			vnum = g_edges[edgenum].v[0];
 
-		Vec_Subtract (g_verts[vnum], view.pos, v);
-		//TODO: rotate into view
+		Vec_Subtract (g_verts[vnum], view.pos, transformed);
+		v[0] = Vec_Dot (view.right, transformed);
+		v[1] = Vec_Dot (view.up, transformed);
+		v[2] = Vec_Dot (view.forward, transformed);
 
 		ov = p_outverts + num_outverts++;
 
@@ -190,8 +195,6 @@ void
 R_DrawGeometry (void)
 {
 	int i;
-
-	//TODO: set up view vecs
 
 	for (i = 0; i < g_numsurfs; i++)
 		DrawSurf (&g_surfs[i]);

@@ -8,8 +8,8 @@
 #include "render.h"
 
 static bool quit = false;
-static int movedir[3];
-static bool space = false;
+static float moves[3];
+static bool dragging = false;
 #define SPEED 32
 
 
@@ -25,32 +25,51 @@ RunInput (float frametime)
 	{
 		switch (sdlev.type)
 		{
+			case SDL_MOUSEBUTTONDOWN:
+				dragging = true;
+				break;
+
+			case SDL_MOUSEBUTTONUP:
+				dragging = false;
+				break;
+
 			case SDL_KEYDOWN:
 				if (sdlev.key.keysym.sym == SDLK_UP)
-					movedir[2]++;
+					moves[2]++;
 				else if (sdlev.key.keysym.sym == SDLK_DOWN)
-					movedir[2]--;
+					moves[2]--;
 				else if (sdlev.key.keysym.sym == SDLK_LEFT)
-					movedir[0]--;
+					moves[0]--;
 				else if (sdlev.key.keysym.sym == SDLK_RIGHT)
-					movedir[0]++;
-				else if (sdlev.key.keysym.sym == SDLK_SPACE)
-					space = true;
+					moves[0]++;
 				break;
 
 			case SDL_KEYUP:
 				if (sdlev.key.keysym.sym == SDLK_ESCAPE)
 					quit = true;
 				else if (sdlev.key.keysym.sym == SDLK_UP)
-					movedir[2]--;
+					moves[2]--;
 				else if (sdlev.key.keysym.sym == SDLK_DOWN)
-					movedir[2]++;
+					moves[2]++;
 				else if (sdlev.key.keysym.sym == SDLK_LEFT)
-					movedir[0]++;
+					moves[0]++;
 				else if (sdlev.key.keysym.sym == SDLK_RIGHT)
-					movedir[0]--;
-				else if (sdlev.key.keysym.sym == SDLK_SPACE)
-					space = false;
+					moves[0]--;
+				else if (sdlev.key.keysym.sym == 'v')
+				{
+					printf("right: (%g, %g, %g)\n",
+						view.right[0],
+						view.right[1],
+						view.right[2]);
+					printf("up:    (%g, %g, %g)\n",
+						view.up[0],
+						view.up[1],
+						view.up[2]);
+					printf("fwd  : (%g, %g, %g)\n",
+						view.forward[0],
+						view.forward[1],
+						view.forward[2]);
+				}
 				break;
 
 			case SDL_MOUSEMOTION:
@@ -67,7 +86,7 @@ RunInput (float frametime)
 		}
 	}
 
-	if (space)
+	if (dragging)
 	{
 		float rads;
 
@@ -80,13 +99,16 @@ RunInput (float frametime)
 
 	{
 		float v[3];
-		Vec_Clear (v);
-		v[0] = movedir[0];
-		v[1] = movedir[1];
-		v[2] = movedir[2];
-		Vec_Scale (v, SPEED * frametime);
+		Vec_Copy (view.forward, v);
+		Vec_Scale (v, moves[2] * SPEED * frametime);
+		Vec_Add (view.pos, v, view.pos);
+
+		Vec_Copy (view.right, v);
+		Vec_Scale (v, moves[0] * SPEED * frametime);
 		Vec_Add (view.pos, v, view.pos);
 	}
+
+	Vec_AnglesVectors (view.angles, view.right, view.up, view.forward);
 }
 
 
