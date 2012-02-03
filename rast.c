@@ -149,9 +149,7 @@ DrawSurf (struct msurf_s *s)
 			vnum = g_edges[edgenum].v[0];
 
 		Vec_Subtract (g_verts[vnum], view.pos, transformed);
-		v[0] = Vec_Dot (view.right, transformed);
-		v[1] = Vec_Dot (view.up, transformed);
-		v[2] = Vec_Dot (view.forward, transformed);
+		R_TransformVec (transformed, v);
 
 		ov = p_outverts + num_outverts++;
 
@@ -192,9 +190,27 @@ DrawSurf (struct msurf_s *s)
 
 
 void
+R_TransformVec (const float v[3], float out[3])
+{
+	out[0] = Vec_Dot (view.right, v);
+	out[1] = Vec_Dot (view.up, v);
+	out[2] = Vec_Dot (view.forward, v);
+}
+
+
+static void
+SetupFrustum (void)
+{
+	//TODO: ...
+}
+
+
+void
 R_DrawGeometry (void)
 {
 	int i;
+
+	SetupFrustum ();
 
 	for (i = 0; i < g_numsurfs; i++)
 		DrawSurf (&g_surfs[i]);

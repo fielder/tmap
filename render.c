@@ -30,15 +30,6 @@ SetupView (int w, int h, float fov_x)
 
 	Vec_Clear (view.pos);
 	Vec_Clear (view.angles);
-
-	Vec_Clear (view.right);
-	view.right[0] = 1.0;
-
-	Vec_Clear (view.up);
-	view.up[1] = 1.0;
-
-	Vec_Clear (view.forward);
-	view.forward[2] = 1.0;
 }
 
 

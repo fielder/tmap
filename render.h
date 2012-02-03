@@ -2,6 +2,7 @@
 #define __RENDER_H__
 
 #include "cdefs.h"
+#include "vec.h"
 
 struct tex_s
 {
@@ -26,6 +27,8 @@ struct view_s
 	float right[3];
 	float up[3];
 	float forward[3];
+
+	struct plane_s planes[4];
 };
 
 /* render.c */
@@ -55,6 +58,9 @@ extern void
 R_Refresh (void);
 
 /* rast.c */
+
+extern void
+R_TransformVec (const float v[3], float out[3]);
 
 extern void
 R_DrawGeometry (void);

@@ -9,6 +9,7 @@
 #include "render.h"
 
 static bool quit = false;
+
 static float moves[3];
 static bool dragging = false;
 static float speed_mult = 1.0;
@@ -33,7 +34,6 @@ RunInput (float frametime)
 	SDL_Event sdlev;
 	int mouse_delt[2];
 	float v[3];
-	int i;
 
 	mouse_delt[0] = mouse_delt[1] = 0;
 
@@ -144,6 +144,9 @@ RunInput (float frametime)
 	if (view.angles[PITCH] < -M_PI / 2.0)
 		view.angles[PITCH] = -M_PI / 2.0;
 
+	/* make view vectors from camera angles */
+	Vec_AnglesVectors (view.angles, view.right, view.up, view.forward);
+
 	/* move camera */
 	Vec_Clear (v);
 
@@ -158,9 +161,6 @@ RunInput (float frametime)
 	Vec_Copy (view.forward, v);
 	Vec_Scale (v, moves[2] * SPEED * speed_mult * frametime);
 	Vec_Add (view.pos, v, view.pos);
-
-	/* make view vectors from camera angles */
-	Vec_AnglesVectors (view.angles, view.right, view.up, view.forward);
 }
 
 
