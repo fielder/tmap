@@ -132,10 +132,10 @@ RunInput (float frametime)
 		float rads;
 
 		rads = view.fov_x * (mouse_delt[0] / (float)r_w);
-		view.angles[YAW] += rads;
+		view.angles[YAW] -= rads;
 
 		rads = view.fov_y * (mouse_delt[1] / (float)r_h);
-		view.angles[PITCH] += rads;
+		view.angles[PITCH] -= rads;
 	}
 
 	/* restrict camera angles */
@@ -145,7 +145,9 @@ RunInput (float frametime)
 		view.angles[PITCH] = -M_PI / 2.0;
 
 	/* make view vectors from camera angles */
-	Vec_AnglesVectors (view.angles, view.right, view.up, view.forward);
+	Vec_Copy (view.angles, v);
+	Vec_Scale (v, -1);
+	Vec_AnglesVectors (v, view.right, view.up, view.forward);
 
 	/* move camera */
 	Vec_Clear (v);
