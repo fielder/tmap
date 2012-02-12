@@ -192,20 +192,6 @@ DrawSurf (struct msurf_s *s)
 void
 R_TransformVec (const float v[3], float out[3])
 {
-	/*
-	out[0] = Vec_Dot (view.right, v);
-	out[1] = Vec_Dot (view.up, v);
-	out[2] = Vec_Dot (view.forward, v);
-	*/
-	/*
-	int i;
-	for (i = 0; i < 3; i++)
-	{
-		out[i] = v[0] * view.right[i] +
-			v[1] * view.up[i] +
-			v[2] * view.forward[i];
-	}
-	*/
 	int i;
 
 	for (i = 0; i < 3; i++)
@@ -240,6 +226,49 @@ DrawPoint (const float v[3], int c)
 }
 
 
+static void
+DrawSurfEdges (const struct msurf_s *s)
+{
+	const unsigned int *edgenums;
+	unsigned int edgenum;
+	int i, j;
+	const float *v1, *v2;
+	struct medge_s *medge;
+	float step;
+	float v[3], inc[3];
+
+	if (Vec_Dot(s->normal, view.pos) - s->dist < PLANE_DIST_EPSILON)
+		return;
+
+	edgenums = g_surfedges + s->firstedge;
+	for (i = 0; i < s->numedges; i++)
+	{
+		edgenum = edgenums[i];
+		if (edgenum & 0x80000000)
+		{
+			medge = &g_edges[edgenum & 0x7fffffff];
+			v1 = g_verts[medge->v[1]];
+			v2 = g_verts[medge->v[0]];
+		}
+		else
+		{
+			medge = &g_edges[edgenum];
+			v1 = g_verts[medge->v[0]];
+			v2 = g_verts[medge->v[1]];
+		}
+
+		Vec_Subtract (v2, v1, inc);
+		step = Vec_Length(inc) / 256.0;
+		Vec_Normalize (inc);
+		Vec_Scale (inc, step);
+		Vec_Copy (v1, v);
+		for (j = 0; j < 256; j++)
+		{
+			Vec_Add (v, inc, v);
+			DrawPoint (v, (uintptr_t)s >> 4);
+		}
+	}
+}
 static void
 SetupFrustum (void)
 {
@@ -316,16 +345,17 @@ SetupFrustum (void)
 void
 R_DrawGeometry (void)
 {
-//	int i;
+	int i;
 
 	SetupFrustum ();
 
-//	for (i = 0; i < g_numsurfs; i++)
-//		DrawSurf (&g_surfs[i]);
+	for (i = 0; i < g_numsurfs; i++)
+		//DrawSurf (&g_surfs[i]);
+		DrawSurfEdges (&g_surfs[i]);
 
+#if 1
 	{
 		float v[3];
-		int i;
 
 		Vec_Clear (v);
 		DrawPoint (v, 4);
@@ -342,4 +372,5 @@ R_DrawGeometry (void)
 			DrawPoint (v, 198);
 		}
 	}
+#endif
 }

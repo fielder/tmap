@@ -34,9 +34,7 @@ RunInput (float frametime)
 	SDL_Event sdlev;
 	int mouse_delt[2];
 	float v[3];
-	float rot[3][3];
 	float mwheel;
-	int i;
 
 	mouse_delt[0] = mouse_delt[1] = 0;
 	mwheel = 0.0;
