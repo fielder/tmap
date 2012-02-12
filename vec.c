@@ -157,6 +157,26 @@ Vec_BoxPlaneSide (const struct plane_s *plane, float mins[3], float maxs[3])
 
 
 void
+Vec_MultMatrix (float a[3][3],
+		float b[3][3],
+		float out[3][3])
+{
+	out[0][0] = a[0][0] * b[0][0] + a[0][1] * b[1][0] + a[0][2] * b[2][0];
+	out[0][1] = a[0][0] * b[0][1] + a[0][1] * b[1][1] + a[0][2] * b[2][1];
+	out[0][2] = a[0][0] * b[0][2] + a[0][1] * b[1][2] + a[0][2] * b[2][2];
+
+	out[1][0] = a[1][0] * b[0][0] + a[1][1] * b[1][0] + a[1][2] * b[2][0];
+	out[1][1] = a[1][0] * b[0][1] + a[1][1] * b[1][1] + a[1][2] * b[2][1];
+	out[1][2] = a[1][0] * b[0][2] + a[1][1] * b[1][2] + a[1][2] * b[2][2];
+
+	out[2][0] = a[2][0] * b[0][0] + a[2][1] * b[1][0] + a[2][2] * b[2][0];
+	out[2][1] = a[2][0] * b[0][1] + a[2][1] * b[1][1] + a[2][2] * b[2][1];
+	out[2][2] = a[2][0] * b[0][2] + a[2][1] * b[1][2] + a[2][2] * b[2][2];
+}
+
+
+#if 0
+void
 Vec_AnglesVectors (	const float angles[3],
 			float right[3],
 			float up[3],
@@ -204,4 +224,98 @@ Vec_AnglesVectors (	const float angles[3],
 	forward[0] = sr * sp + cr * sy * cp;
 	forward[1] = sr * sy * cp - cr * sp;
 	forward[2] = cy * cp;
+}
+#endif
+
+
+void
+Vec_AnglesMatrix (	const float angles[3],
+			float out[3][3])
+{
+#if 1
+	double cx, sx;
+	double cy, sy;
+	double cz, sz;
+
+	float x[3][3];
+	float y[3][3];
+	float z[3][3];
+	float temp[3][3];
+
+	x[0][0] = 1.0; x[0][1] = 0.0; x[0][2] = 0.0;
+	x[1][0] = 0.0; x[1][1] = 1.0; x[1][2] = 0.0;
+	x[2][0] = 0.0; x[2][1] = 0.0; x[2][2] = 1.0;
+	cx = cos (angles[0]);
+	sx = sin (angles[0]);
+	x[1][1] = cx;
+	x[1][2] = -sx;
+	x[2][1] = sx;
+	x[2][2] = cx;
+
+	y[0][0] = 1.0; y[0][1] = 0.0; y[0][2] = 0.0;
+	y[1][0] = 0.0; y[1][1] = 1.0; y[1][2] = 0.0;
+	y[2][0] = 0.0; y[2][1] = 0.0; y[2][2] = 1.0;
+	cy = cos (angles[1]);
+	sy = sin (angles[1]);
+	y[0][0] = cy;
+	y[0][2] = sy;
+	y[2][0] = -sy;
+	y[2][2] = cy;
+
+	z[0][0] = 1.0; z[0][1] = 0.0; z[0][2] = 0.0;
+	z[1][0] = 0.0; z[1][1] = 1.0; z[1][2] = 0.0;
+	z[2][0] = 0.0; z[2][1] = 0.0; z[2][2] = 1.0;
+	cz = cos (angles[2]);
+	sz = sin (angles[2]);
+	z[0][0] = cz;
+	z[0][1] = -sz;
+	z[1][0] = sz;
+	z[1][1] = cz;
+
+	Vec_MultMatrix (x, y, temp);
+	Vec_MultMatrix (temp, z, out);
+#else
+	double cr, sr;
+	double cp, sp;
+	double cy, sy;
+
+	cr = cos (angles[ROLL]);
+	sr = sin (angles[ROLL]);
+
+	cp = cos (angles[PITCH]);
+	sp = sin (angles[PITCH]);
+
+	cy = cos (angles[YAW]);
+	sy = sin (angles[YAW]);
+
+	//TODO: any common sub-expressions here ?
+
+	/* X * Y * Z */
+	out[0][0] = cy * cr;
+	out[0][1] = -cy * sr;
+	out[0][2] = sy;
+
+	out[1][0] = sp * sy * cr + cp * sr;
+	out[1][1] = -sp * sy * sr + cp * cr;
+	out[1][2] = -sp * cy;
+
+	out[2][0] = -cp * sy * cr + sp * sr;
+	out[2][1] = cp * sy * sr + sp * cr;
+	out[2][2] = cp * cy;
+
+	/* Z * Y * X */
+	/*
+	out[0][0] = cr * cy;
+	out[0][1] = cr * sy * sp - sr * cp;
+	out[0][2] = sr * sp + cr * sy * cp;
+
+	out[1][0] = sr * cy;
+	out[1][1] = cr * cp + sr * sy * sp;
+	out[1][2] = sr * sy * cp - cr * sp;
+
+	out[2][0] = -sy;
+	out[2][1] = cy * sp;
+	out[2][2] = cy * cp;
+	*/
+#endif
 }
