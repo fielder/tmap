@@ -192,26 +192,154 @@ DrawSurf (struct msurf_s *s)
 void
 R_TransformVec (const float v[3], float out[3])
 {
+	/*
 	out[0] = Vec_Dot (view.right, v);
 	out[1] = Vec_Dot (view.up, v);
 	out[2] = Vec_Dot (view.forward, v);
+	*/
+	/*
+	int i;
+	for (i = 0; i < 3; i++)
+	{
+		out[i] = v[0] * view.right[i] +
+			v[1] * view.up[i] +
+			v[2] * view.forward[i];
+	}
+	*/
+	int i;
+
+	for (i = 0; i < 3; i++)
+		out[i] = Vec_Dot (view.xform[i], v);
+}
+
+
+static void
+DrawPoint (const float v[3], int c)
+{
+	float transformed[3];
+	float out[3];
+
+	Vec_Subtract (v, view.pos, transformed);
+	R_TransformVec (transformed, out);
+
+	if (out[2] > 0.0)
+	{
+		float zi;
+		int u, v;
+
+		zi = 1.0 / out[2];
+		u = ceil(view.center_x + view.dist * zi * out[0]);
+		v = ceil(view.center_y - view.dist * zi * out[1]);
+
+		if (	u >= 0 && u < r_w &&
+			v >= 0 && v < r_h )
+		{
+			r_buf[v * r_w + u] = c;
+		}
+	}
 }
 
 
 static void
 SetupFrustum (void)
 {
-	//TODO: ...
+#if 0
+#if 0
+	float normal[3];
+#endif
+	float v_right[3], v_up[3], v_forward[3];
+
+	Vec_AnglesVectors2 (view.angles, v_right, v_up, v_forward);
+
+#if 0
+	/* left plane */
+	normal[0] = cos (view.fov_x / 2.0);
+	normal[1] = 0.0;
+	normal[2] = sin ()view.fov_x / 2.0;
+#endif
+	float v[3], out[3];
+	float dx, dy;
+
+	dx = view.dist * tan (view.fov_x / 2.0);
+	dy = view.dist * tan (view.fov_y / 2.0);
+
+	/* origin */
+	Vec_Clear (v);
+	out[0] = Vec_Dot (v, v_right);
+	out[1] = Vec_Dot (v, v_up);
+	out[2] = Vec_Dot (v, v_forward);
+	DrawPoint (out, 4);
+
+	/* top-left */
+	Vec_Clear (v);
+	v[0] = -dx;
+	v[1] = dy;
+	v[2] = view.dist;
+	out[0] = Vec_Dot (v, v_right);
+	out[1] = Vec_Dot (v, v_up);
+	out[2] = Vec_Dot (v, v_forward);
+	DrawPoint (out, 4);
+
+	/* top-right */
+	Vec_Clear (v);
+	v[0] = dx;
+	v[1] = dy;
+	v[2] = view.dist;
+	out[0] = Vec_Dot (v, v_right);
+	out[1] = Vec_Dot (v, v_up);
+	out[2] = Vec_Dot (v, v_forward);
+	DrawPoint (out, 4);
+
+	/* bottom-left */
+	Vec_Clear (v);
+	v[0] = -dx;
+	v[1] = -dy;
+	v[2] = view.dist;
+	out[0] = Vec_Dot (v, v_right);
+	out[1] = Vec_Dot (v, v_up);
+	out[2] = Vec_Dot (v, v_forward);
+	DrawPoint (out, 4);
+
+	/* bottom-right */
+	Vec_Clear (v);
+	v[0] = dx;
+	v[1] = -dy;
+	v[2] = view.dist;
+	out[0] = Vec_Dot (v, v_right);
+	out[1] = Vec_Dot (v, v_up);
+	out[2] = Vec_Dot (v, v_forward);
+	DrawPoint (out, 4);
+#endif
 }
 
 
 void
 R_DrawGeometry (void)
 {
-	int i;
+//	int i;
 
 	SetupFrustum ();
 
-	for (i = 0; i < g_numsurfs; i++)
-		DrawSurf (&g_surfs[i]);
+//	for (i = 0; i < g_numsurfs; i++)
+//		DrawSurf (&g_surfs[i]);
+
+	{
+		float v[3];
+		int i;
+
+		Vec_Clear (v);
+		DrawPoint (v, 4);
+
+		for (i = 0; i < 128; i++)
+		{
+			Vec_Clear (v); v[0] = i;
+			DrawPoint (v, 176);
+
+			Vec_Clear (v); v[1] = i;
+			DrawPoint (v, 112);
+
+			Vec_Clear (v); v[2] = i;
+			DrawPoint (v, 198);
+		}
+	}
 }

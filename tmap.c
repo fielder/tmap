@@ -14,7 +14,7 @@ static float moves[3];
 static bool dragging = false;
 static float speed_mult = 1.0;
 
-#define SPEED 32.0
+#define SPEED 64.0
 
 #if 1
 	#define KEY_FORWARD	'.'
@@ -34,8 +34,12 @@ RunInput (float frametime)
 	SDL_Event sdlev;
 	int mouse_delt[2];
 	float v[3];
+	float rot[3][3];
+	float mwheel;
+	int i;
 
 	mouse_delt[0] = mouse_delt[1] = 0;
+	mwheel = 0.0;
 
 	while (SDL_PollEvent(&sdlev))
 	{
@@ -53,6 +57,10 @@ RunInput (float frametime)
 					dragging = false;
 				else if (sdlev.button.button == 3)
 					moves[1]--;
+				else if (sdlev.button.button == 4)
+					mwheel++;
+				else if (sdlev.button.button == 5)
+					mwheel--;
 				break;
 
 			case SDL_KEYDOWN:
@@ -110,6 +118,17 @@ RunInput (float frametime)
 						view.angles[1],
 						view.angles[2]);
 				}
+				else if (sdlev.key.keysym.sym == 'm')
+				{
+					printf (" %0.3f  %0.3f  %0.3f\n", view.xform[0][0], view.xform[0][1], view.xform[0][2]);
+					printf (" %0.3f  %0.3f  %0.3f\n", view.xform[1][0], view.xform[1][1], view.xform[1][2]);
+					printf (" %0.3f  %0.3f  %0.3f\n", view.xform[2][0], view.xform[2][1], view.xform[2][2]);
+				}
+				else if (sdlev.key.keysym.sym == 'r')
+				{
+					Vec_Clear (view.angles);
+					Vec_Clear (view.pos);
+				}
 				break;
 
 			case SDL_MOUSEMOTION:
@@ -138,16 +157,29 @@ RunInput (float frametime)
 		view.angles[PITCH] -= rads;
 	}
 
+	if (mwheel != 0)
+		view.angles[YAW] += mwheel * 10.0 * (M_PI / 180.0);
+
 	/* restrict camera angles */
 	if (view.angles[PITCH] > M_PI / 2.0)
 		view.angles[PITCH] = M_PI / 2.0;
 	if (view.angles[PITCH] < -M_PI / 2.0)
 		view.angles[PITCH] = -M_PI / 2.0;
 
-	/* make view vectors from camera angles */
+	while (view.angles[YAW] >= M_PI * 2.0)
+		view.angles[YAW] -= M_PI * 2.0;
+	while (view.angles[YAW] < 0.0)
+		view.angles[YAW] += M_PI * 2.0;
+
+	/* make transformation matrix */
 	Vec_Copy (view.angles, v);
-	Vec_Scale (v, -1);
-	Vec_AnglesVectors (v, view.right, view.up, view.forward);
+	Vec_Scale (v, -1.0);
+	Vec_AnglesMatrix (v, view.xform);
+	Vec_Scale (view.xform[2], -1.0);
+
+	Vec_Copy (view.xform[0], view.right);
+	Vec_Copy (view.xform[1], view.up);
+	Vec_Copy (view.xform[2], view.forward);
 
 	/* move camera */
 	Vec_Clear (v);

@@ -28,6 +28,8 @@ struct view_s
 	float up[3];
 	float forward[3];
 
+	float xform[3][3]; /* world-to-camera */
+
 	struct plane_s planes[4];
 };
 
