@@ -86,6 +86,13 @@ Vec_Normalize (float v[3])
 }
 
 
+float
+Vec_Length (const float v[3])
+{
+	return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+}
+
+
 void
 Vec_SnapPlane (float normal[3], float *dist)
 {
