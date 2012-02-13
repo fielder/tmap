@@ -182,64 +182,11 @@ Vec_MultMatrix (float a[3][3],
 }
 
 
-#if 0
-void
-Vec_AnglesVectors (	const float angles[3],
-			float right[3],
-			float up[3],
-			float forward[3])
-{
-	double cr, sr;
-	double cp, sp;
-	double cy, sy;
-
-	cr = cos (angles[ROLL]);
-	sr = sin (angles[ROLL]);
-
-	cp = cos (angles[PITCH]);
-	sp = sin (angles[PITCH]);
-
-	cy = cos (angles[YAW]);
-	sy = sin (angles[YAW]);
-
-	//TODO: any common sub-expressions here ?
-
-	/* X * Y * Z */
-/*
-	right[0] = cy * cr;
-	right[1] = sp * sy * cr - cp * sr;
-	right[2] = cp * sy * cr + sp * sr;
-
-	up[0] = cy * sr;
-	up[1] = sp * sy * sr + cp * cr;
-	up[2] = cp * sy * sr - sp * cr;
-
-	forward[0] = -sy;
-	forward[1] = sp * cy;
-	forward[2] = cp * cy;
-*/
-
-	/* Z * Y * X */
-	right[0] = cr * cy;
-	right[1] = sr * cy;
-	right[2] = -sy;
-
-	up[0] = cr * sy * sp - sr * cp;
-	up[1] = cr * cp + sr * sy * sp;
-	up[2] = cy * sp;
-
-	forward[0] = sr * sp + cr * sy * cp;
-	forward[1] = sr * sy * cp - cr * sp;
-	forward[2] = cy * cp;
-}
-#endif
-
-
 void
 Vec_AnglesMatrix (	const float angles[3],
-			float out[3][3])
+			float out[3][3],
+			int order)
 {
-#if 1
 	double cx, sx;
 	double cy, sy;
 	double cz, sz;
@@ -279,50 +226,42 @@ Vec_AnglesMatrix (	const float angles[3],
 	z[1][0] = sz;
 	z[1][1] = cz;
 
-	Vec_MultMatrix (x, y, temp);
-	Vec_MultMatrix (temp, z, out);
-#else
-	double cr, sr;
-	double cp, sp;
-	double cy, sy;
+	switch (order)
+	{
+		case ROT_MATRIX_ORDER_XYZ:
+			Vec_MultMatrix (x, y, temp);
+			Vec_MultMatrix (temp, z, out);
+			break;
 
-	cr = cos (angles[ROLL]);
-	sr = sin (angles[ROLL]);
+		case ROT_MATRIX_ORDER_XZY:
+			Vec_MultMatrix (x, z, temp);
+			Vec_MultMatrix (temp, y, out);
+			break;
 
-	cp = cos (angles[PITCH]);
-	sp = sin (angles[PITCH]);
+		case ROT_MATRIX_ORDER_YXZ:
+			Vec_MultMatrix (y, x, temp);
+			Vec_MultMatrix (temp, z, out);
+			break;
 
-	cy = cos (angles[YAW]);
-	sy = sin (angles[YAW]);
+		case ROT_MATRIX_ORDER_ZXY:
+			Vec_MultMatrix (z, x, temp);
+			Vec_MultMatrix (temp, y, out);
+			break;
 
-	//TODO: any common sub-expressions here ?
+		case ROT_MATRIX_ORDER_YZX:
+			Vec_MultMatrix (y, z, temp);
+			Vec_MultMatrix (temp, x, out);
+			break;
 
-	/* X * Y * Z */
-	out[0][0] = cy * cr;
-	out[0][1] = -cy * sr;
-	out[0][2] = sy;
+		case ROT_MATRIX_ORDER_ZYX:
+			Vec_MultMatrix (z, y, temp);
+			Vec_MultMatrix (temp, x, out);
+			break;
 
-	out[1][0] = sp * sy * cr + cp * sr;
-	out[1][1] = -sp * sy * sr + cp * cr;
-	out[1][2] = -sp * cy;
-
-	out[2][0] = -cp * sy * cr + sp * sr;
-	out[2][1] = cp * sy * sr + sp * cr;
-	out[2][2] = cp * cy;
-
-	/* Z * Y * X */
-	/*
-	out[0][0] = cr * cy;
-	out[0][1] = cr * sy * sp - sr * cp;
-	out[0][2] = sr * sp + cr * sy * cp;
-
-	out[1][0] = sr * cy;
-	out[1][1] = cr * cp + sr * sy * sp;
-	out[1][2] = sr * sy * cp - cr * sp;
-
-	out[2][0] = -sy;
-	out[2][1] = cy * sp;
-	out[2][2] = cy * cp;
-	*/
-#endif
+		default:
+			out[0][0] = 1.0; out[0][1] = 0.0; out[0][2] = 0.0;
+			out[1][0] = 0.0; out[1][1] = 1.0; out[1][2] = 0.0;
+			out[2][0] = 0.0; out[2][1] = 0.0; out[2][2] = 1.0;
+			break;
+	}
 }

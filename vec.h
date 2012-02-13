@@ -79,15 +79,19 @@ Vec_MultMatrix (float a[3][3],
 		float b[3][3],
 		float out[3][3]);
 
-/*
-extern void
-Vec_AnglesVectors (	const float angles[3],
-			float right[3],
-			float up[3],
-			float forward[3]);
-*/
+enum
+{
+	ROT_MATRIX_ORDER_XYZ,
+	ROT_MATRIX_ORDER_XZY,
+	ROT_MATRIX_ORDER_YXZ,
+	ROT_MATRIX_ORDER_ZXY,
+	ROT_MATRIX_ORDER_YZX,
+	ROT_MATRIX_ORDER_ZYX
+};
+
 extern void
 Vec_AnglesMatrix (	const float angles[3],
-			float out[3][3]);
+			float out[3][3],
+			int order);
 
 #endif /* __VEC_H__ */
