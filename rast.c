@@ -48,8 +48,8 @@ FinishSpans (void)
 	while (i != p_bottomidx)
 	{
 		/* find next vert */
-		if ((nexti = i + 1) == num_outverts)
-			nexti = 0;
+		if ((nexti = i - 1) == -1)
+			nexti = num_outverts - 1;
 		nv = &p_outverts[nexti];
 		ibot = ceil(nv->v);
 
@@ -93,8 +93,8 @@ BeginSpans (void)
 	while (i != p_bottomidx)
 	{
 		/* find next vert */
-		if ((nexti = i - 1) == -1)
-			nexti = num_outverts - 1;
+		if ((nexti = i + 1) == num_outverts)
+			nexti = 0;
 		nv = &p_outverts[nexti];
 		ibot = ceil(nv->v);
 
@@ -350,8 +350,10 @@ R_DrawGeometry (void)
 	SetupFrustum ();
 
 	for (i = 0; i < g_numsurfs; i++)
-		//DrawSurf (&g_surfs[i]);
-		DrawSurfEdges (&g_surfs[i]);
+	{
+		DrawSurf (&g_surfs[i]);
+//		DrawSurfEdges (&g_surfs[i]);
+	}
 
 #if 1
 	{
