@@ -34,6 +34,16 @@ enum
 #define PLANE_DIST_EPSILON 0.01
 #define PLANE_NORMAL_EPSILON 0.00001
 
+enum
+{
+	ROT_MATRIX_ORDER_XYZ,
+	ROT_MATRIX_ORDER_XZY,
+	ROT_MATRIX_ORDER_YXZ,
+	ROT_MATRIX_ORDER_ZXY,
+	ROT_MATRIX_ORDER_YZX,
+	ROT_MATRIX_ORDER_ZYX
+};
+
 extern void
 Vec_Clear (float v[3]);
 
@@ -75,23 +85,9 @@ extern int
 Vec_BoxPlaneSide (const struct plane_s *plane, float mins[3], float maxs[3]);
 
 extern void
-Vec_MultMatrix (float a[3][3],
-		float b[3][3],
-		float out[3][3]);
-
-enum
-{
-	ROT_MATRIX_ORDER_XYZ,
-	ROT_MATRIX_ORDER_XZY,
-	ROT_MATRIX_ORDER_YXZ,
-	ROT_MATRIX_ORDER_ZXY,
-	ROT_MATRIX_ORDER_YZX,
-	ROT_MATRIX_ORDER_ZYX
-};
+Vec_MultMatrix (float a[3][3], float b[3][3], float out[3][3]);
 
 extern void
-Vec_AnglesMatrix (	const float angles[3],
-			float out[3][3],
-			int order);
+Vec_AnglesMatrix (const float angles[3], float out[3][3], int order);
 
 #endif /* __VEC_H__ */

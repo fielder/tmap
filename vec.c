@@ -164,9 +164,7 @@ Vec_BoxPlaneSide (const struct plane_s *plane, float mins[3], float maxs[3])
 
 
 void
-Vec_MultMatrix (float a[3][3],
-		float b[3][3],
-		float out[3][3])
+Vec_MultMatrix (float a[3][3], float b[3][3], float out[3][3])
 {
 	out[0][0] = a[0][0] * b[0][0] + a[0][1] * b[1][0] + a[0][2] * b[2][0];
 	out[0][1] = a[0][0] * b[0][1] + a[0][1] * b[1][1] + a[0][2] * b[2][1];
@@ -183,9 +181,7 @@ Vec_MultMatrix (float a[3][3],
 
 
 void
-Vec_AnglesMatrix (	const float angles[3],
-			float out[3][3],
-			int order)
+Vec_AnglesMatrix (const float angles[3], float out[3][3], int order)
 {
 	double cx, sx;
 	double cy, sy;
