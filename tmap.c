@@ -173,8 +173,13 @@ RunInput (float frametime)
 	Vec_Copy (view.angles, v);
 	Vec_Scale (v, -1.0);
 	Vec_AnglesMatrix (v, view.xform, ROT_MATRIX_ORDER_XYZ);
+
+	/* We're looking down the -z axis, and our projection calculation
+	 * assumes greater z is further away. So negate z values so
+	 * positive z objects are behind the camera. */
 	Vec_Scale (view.xform[2], -1.0);
 
+	/* get view vectors */
 	Vec_Copy (view.xform[0], view.right);
 	Vec_Copy (view.xform[1], view.up);
 	Vec_Copy (view.xform[2], view.forward);

@@ -10,6 +10,14 @@ struct tex_s
 	int w, h;
 };
 
+enum
+{
+	VPLANE_LEFT,
+	VPLANE_TOP,
+	VPLANE_RIGHT,
+	VPLANE_BOTTOM
+};
+
 struct view_s
 {
 	float center_x;

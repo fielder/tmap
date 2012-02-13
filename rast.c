@@ -290,10 +290,16 @@ SetupFrustum (void)
 	float xform[3][3];
 	float origin[3];
 	float tl[3], tr[3], bl[3], br[3];
+	float ang;
 
 	Vec_Clear (origin);
 
+#if 1
 	Vec_AnglesMatrix (view.angles, xform, ROT_MATRIX_ORDER_ZYX);
+#else
+	v[0]=0; v[1]=view.angles[1]; v[2]=0;
+	Vec_AnglesMatrix (v, xform, ROT_MATRIX_ORDER_ZYX);
+#endif
 
 	dx = view.dist * tan (view.fov_x / 2.0);
 	dy = view.dist * tan (view.fov_y / 2.0);
@@ -334,6 +340,48 @@ SetupFrustum (void)
 	Draw3DLine (tr, br, 256, 4);
 	Draw3DLine (br, bl, 256, 4);
 	Draw3DLine (bl, tl, 256, 4);
+
+	/* normals */
+
+	/* left plane */
+	ang = view.fov_x / 2.0;
+	v[0] = cos (ang);
+	v[1] = 0.0;
+	v[2] = -sin (ang);
+	Vec_Scale (v, 8.0);
+	for (i = 0; i < 3; i++) /* rotate with view angles */
+		view.planes[VPLANE_LEFT].normal[i] = Vec_Dot (xform[i], v);
+	Draw3DLine (origin, view.planes[VPLANE_LEFT].normal, 32, 251);
+
+	/* right plane */
+	ang = M_PI - (view.fov_x / 2.0);
+	v[0] = cos (ang);
+	v[1] = 0.0;
+	v[2] = -sin (ang);
+	Vec_Scale (v, 8.0);
+	for (i = 0; i < 3; i++) /* rotate with view angles */
+		view.planes[VPLANE_RIGHT].normal[i] = Vec_Dot (xform[i], v);
+	Draw3DLine (origin, view.planes[VPLANE_RIGHT].normal, 32, 249);
+
+	/* bottom plane */
+	ang = (M_PI / 2.0) - (view.fov_y / 2.0);
+	v[0] = 0.0;
+	v[1] = sin (ang);
+	v[2] = -cos (ang);
+	Vec_Scale (v, 8.0);
+	for (i = 0; i < 3; i++) /* rotate with view angles */
+		view.planes[VPLANE_BOTTOM].normal[i] = Vec_Dot (xform[i], v);
+	Draw3DLine (origin, view.planes[VPLANE_BOTTOM].normal, 32, 247);
+
+	/* top plane */
+	ang = -(M_PI / 2.0) + (view.fov_y / 2.0);
+	v[0] = 0.0;
+	v[1] = sin (ang);
+	v[2] = -cos (ang);
+	Vec_Scale (v, 8.0);
+	for (i = 0; i < 3; i++) /* rotate with view angles */
+		view.planes[VPLANE_TOP].normal[i] = Vec_Dot (xform[i], v);
+	Draw3DLine (origin, view.planes[VPLANE_TOP].normal, 32, 233);
 }
 
 
