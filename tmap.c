@@ -172,7 +172,7 @@ RunInput (float frametime)
 	/* make transformation matrix */
 	Vec_Copy (view.angles, v);
 	Vec_Scale (v, -1.0);
-	Vec_AnglesMatrix (v, view.xform);
+	Vec_AnglesMatrix (v, view.xform, ROT_MATRIX_ORDER_XYZ);
 	Vec_Scale (view.xform[2], -1.0);
 
 	Vec_Copy (view.xform[0], view.right);

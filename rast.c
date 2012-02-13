@@ -32,6 +32,64 @@ static int p_topidx, p_bottomidx;
 //TODO: When starting to scan out an edge we ceil the v, but don't match
 //	up the u with the same adjustment. Is it necessary?
 
+
+static void
+TransformVec (const float v[3], float out[3])
+{
+	int i;
+
+	for (i = 0; i < 3; i++)
+		out[i] = Vec_Dot (view.xform[i], v);
+}
+
+
+static void
+DrawPoint (const float v[3], int c)
+{
+	float transformed[3];
+	float out[3];
+
+	Vec_Subtract (v, view.pos, transformed);
+	TransformVec (transformed, out);
+
+	if (out[2] > 0.0)
+	{
+		float zi;
+		int u, v;
+
+		zi = 1.0 / out[2];
+		u = ceil(view.center_x + view.dist * zi * out[0]);
+		v = ceil(view.center_y - view.dist * zi * out[1]);
+
+		if (	u >= 0 && u < r_w &&
+			v >= 0 && v < r_h )
+		{
+			r_buf[v * r_w + u] = c;
+		}
+	}
+}
+
+
+static void
+Draw3DLine (const float v1[3], const float v2[3], int count, int color)
+{
+	int j;
+	float step;
+	float v[3], inc[3];
+
+	Vec_Subtract (v2, v1, inc);
+	step = Vec_Length(inc) / count;
+	Vec_Normalize (inc);
+	Vec_Scale (inc, step);
+	Vec_Copy (v1, v);
+	for (j = 0; j < count; j++)
+	{
+		Vec_Add (v, inc, v);
+		DrawPoint (v, color);
+	}
+}
+
+
 static void
 FinishSpans (void)
 {
@@ -149,7 +207,7 @@ DrawSurf (struct msurf_s *s)
 			vnum = g_edges[edgenum].v[0];
 
 		Vec_Subtract (g_verts[vnum], view.pos, transformed);
-		R_TransformVec (transformed, v);
+		TransformVec (transformed, v);
 
 		ov = p_outverts + num_outverts++;
 
@@ -189,53 +247,14 @@ DrawSurf (struct msurf_s *s)
 }
 
 
-void
-R_TransformVec (const float v[3], float out[3])
-{
-	int i;
-
-	for (i = 0; i < 3; i++)
-		out[i] = Vec_Dot (view.xform[i], v);
-}
-
-
-static void
-DrawPoint (const float v[3], int c)
-{
-	float transformed[3];
-	float out[3];
-
-	Vec_Subtract (v, view.pos, transformed);
-	R_TransformVec (transformed, out);
-
-	if (out[2] > 0.0)
-	{
-		float zi;
-		int u, v;
-
-		zi = 1.0 / out[2];
-		u = ceil(view.center_x + view.dist * zi * out[0]);
-		v = ceil(view.center_y - view.dist * zi * out[1]);
-
-		if (	u >= 0 && u < r_w &&
-			v >= 0 && v < r_h )
-		{
-			r_buf[v * r_w + u] = c;
-		}
-	}
-}
-
-
 static void
 DrawSurfEdges (const struct msurf_s *s)
 {
 	const unsigned int *edgenums;
 	unsigned int edgenum;
-	int i, j;
+	int i;
 	const float *v1, *v2;
 	struct medge_s *medge;
-	float step;
-	float v[3], inc[3];
 
 	if (Vec_Dot(s->normal, view.pos) - s->dist < PLANE_DIST_EPSILON)
 		return;
@@ -257,88 +276,64 @@ DrawSurfEdges (const struct msurf_s *s)
 			v2 = g_verts[medge->v[1]];
 		}
 
-		Vec_Subtract (v2, v1, inc);
-		step = Vec_Length(inc) / 256.0;
-		Vec_Normalize (inc);
-		Vec_Scale (inc, step);
-		Vec_Copy (v1, v);
-		for (j = 0; j < 256; j++)
-		{
-			Vec_Add (v, inc, v);
-			DrawPoint (v, (uintptr_t)s >> 4);
-		}
+		Draw3DLine (v1, v2, 256, (uintptr_t)s >> 4);
 	}
 }
+
+
 static void
 SetupFrustum (void)
 {
-#if 0
-#if 0
-	float normal[3];
-#endif
-	float v_right[3], v_up[3], v_forward[3];
-
-	Vec_AnglesVectors2 (view.angles, v_right, v_up, v_forward);
-
-#if 0
-	/* left plane */
-	normal[0] = cos (view.fov_x / 2.0);
-	normal[1] = 0.0;
-	normal[2] = sin ()view.fov_x / 2.0;
-#endif
-	float v[3], out[3];
+	int i;
 	float dx, dy;
+	float v[3];
+	float xform[3][3];
+	float origin[3];
+	float tl[3], tr[3], bl[3], br[3];
+
+	Vec_Clear (origin);
+
+	Vec_AnglesMatrix (view.angles, xform, ROT_MATRIX_ORDER_ZYX);
 
 	dx = view.dist * tan (view.fov_x / 2.0);
 	dy = view.dist * tan (view.fov_y / 2.0);
 
-	/* origin */
-	Vec_Clear (v);
-	out[0] = Vec_Dot (v, v_right);
-	out[1] = Vec_Dot (v, v_up);
-	out[2] = Vec_Dot (v, v_forward);
-	DrawPoint (out, 4);
-
-	/* top-left */
 	Vec_Clear (v);
 	v[0] = -dx;
 	v[1] = dy;
-	v[2] = view.dist;
-	out[0] = Vec_Dot (v, v_right);
-	out[1] = Vec_Dot (v, v_up);
-	out[2] = Vec_Dot (v, v_forward);
-	DrawPoint (out, 4);
+	v[2] = -view.dist;
+	for (i = 0; i < 3; i++) /* rotate with view angles */
+		tl[i] = Vec_Dot (xform[i], v);
+	Draw3DLine (origin, tl, 256, 4);
 
-	/* top-right */
 	Vec_Clear (v);
 	v[0] = dx;
 	v[1] = dy;
-	v[2] = view.dist;
-	out[0] = Vec_Dot (v, v_right);
-	out[1] = Vec_Dot (v, v_up);
-	out[2] = Vec_Dot (v, v_forward);
-	DrawPoint (out, 4);
+	v[2] = -view.dist;
+	for (i = 0; i < 3; i++) /* rotate with view angles */
+		tr[i] = Vec_Dot (xform[i], v);
+	Draw3DLine (origin, tr, 256, 4);
 
-	/* bottom-left */
 	Vec_Clear (v);
 	v[0] = -dx;
 	v[1] = -dy;
-	v[2] = view.dist;
-	out[0] = Vec_Dot (v, v_right);
-	out[1] = Vec_Dot (v, v_up);
-	out[2] = Vec_Dot (v, v_forward);
-	DrawPoint (out, 4);
+	v[2] = -view.dist;
+	for (i = 0; i < 3; i++) /* rotate with view angles */
+		bl[i] = Vec_Dot (xform[i], v);
+	Draw3DLine (origin, bl, 256, 4);
 
-	/* bottom-right */
 	Vec_Clear (v);
 	v[0] = dx;
 	v[1] = -dy;
-	v[2] = view.dist;
-	out[0] = Vec_Dot (v, v_right);
-	out[1] = Vec_Dot (v, v_up);
-	out[2] = Vec_Dot (v, v_forward);
-	DrawPoint (out, 4);
-#endif
+	v[2] = -view.dist;
+	for (i = 0; i < 3; i++) /* rotate with view angles */
+		br[i] = Vec_Dot (xform[i], v);
+	Draw3DLine (origin, br, 256, 4);
+
+	Draw3DLine (tl, tr, 256, 4);
+	Draw3DLine (tr, br, 256, 4);
+	Draw3DLine (br, bl, 256, 4);
+	Draw3DLine (bl, tl, 256, 4);
 }
 
 
@@ -351,16 +346,13 @@ R_DrawGeometry (void)
 
 	for (i = 0; i < g_numsurfs; i++)
 	{
-		DrawSurf (&g_surfs[i]);
-//		DrawSurfEdges (&g_surfs[i]);
+//		DrawSurf (&g_surfs[i]);
+		DrawSurfEdges (&g_surfs[i]);
 	}
 
 #if 1
 	{
 		float v[3];
-
-		Vec_Clear (v);
-		DrawPoint (v, 4);
 
 		for (i = 0; i < 128; i++)
 		{

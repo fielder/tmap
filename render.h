@@ -62,9 +62,6 @@ R_Refresh (void);
 /* rast.c */
 
 extern void
-R_TransformVec (const float v[3], float out[3]);
-
-extern void
 R_DrawGeometry (void);
 
 #endif /* __RENDER_H__ */

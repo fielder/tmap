@@ -30,6 +30,7 @@ SetupView (int w, int h, float fov_x)
 
 	Vec_Clear (view.pos);
 	Vec_Clear (view.angles);
+	view.angles[1] = M_PI; /* start off looking to +z axis */
 }
 
 
@@ -243,7 +244,7 @@ R_Refresh (void)
 		pal_set = true;
 	}
 
-	if (0)
+	if (1)
 		DrawPal ();
 
 	R_DrawGeometry ();
