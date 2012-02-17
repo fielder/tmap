@@ -164,6 +164,15 @@ Vec_BoxPlaneSide (const struct plane_s *plane, float mins[3], float maxs[3])
 
 
 void
+Vec_IdentityMatrix (float mat[3][3])
+{
+	mat[0][0] = 1.0; mat[0][1] = 0.0; mat[0][2] = 0.0;
+	mat[1][0] = 0.0; mat[1][1] = 1.0; mat[1][2] = 0.0;
+	mat[2][0] = 0.0; mat[2][1] = 0.0; mat[2][2] = 1.0;
+}
+
+
+void
 Vec_MultMatrix (float a[3][3], float b[3][3], float out[3][3])
 {
 	out[0][0] = a[0][0] * b[0][0] + a[0][1] * b[1][0] + a[0][2] * b[2][0];
@@ -192,31 +201,25 @@ Vec_AnglesMatrix (const float angles[3], float out[3][3], int order)
 	float z[3][3];
 	float temp[3][3];
 
-	x[0][0] = 1.0; x[0][1] = 0.0; x[0][2] = 0.0;
-	x[1][0] = 0.0; x[1][1] = 1.0; x[1][2] = 0.0;
-	x[2][0] = 0.0; x[2][1] = 0.0; x[2][2] = 1.0;
 	cx = cos (angles[0]);
 	sx = sin (angles[0]);
+	Vec_IdentityMatrix (x);
 	x[1][1] = cx;
 	x[1][2] = -sx;
 	x[2][1] = sx;
 	x[2][2] = cx;
 
-	y[0][0] = 1.0; y[0][1] = 0.0; y[0][2] = 0.0;
-	y[1][0] = 0.0; y[1][1] = 1.0; y[1][2] = 0.0;
-	y[2][0] = 0.0; y[2][1] = 0.0; y[2][2] = 1.0;
 	cy = cos (angles[1]);
 	sy = sin (angles[1]);
+	Vec_IdentityMatrix (y);
 	y[0][0] = cy;
 	y[0][2] = sy;
 	y[2][0] = -sy;
 	y[2][2] = cy;
 
-	z[0][0] = 1.0; z[0][1] = 0.0; z[0][2] = 0.0;
-	z[1][0] = 0.0; z[1][1] = 1.0; z[1][2] = 0.0;
-	z[2][0] = 0.0; z[2][1] = 0.0; z[2][2] = 1.0;
 	cz = cos (angles[2]);
 	sz = sin (angles[2]);
+	Vec_IdentityMatrix (z);
 	z[0][0] = cz;
 	z[0][1] = -sz;
 	z[1][0] = sz;
@@ -255,9 +258,7 @@ Vec_AnglesMatrix (const float angles[3], float out[3][3], int order)
 			break;
 
 		default:
-			out[0][0] = 1.0; out[0][1] = 0.0; out[0][2] = 0.0;
-			out[1][0] = 0.0; out[1][1] = 1.0; out[1][2] = 0.0;
-			out[2][0] = 0.0; out[2][1] = 0.0; out[2][2] = 1.0;
+			Vec_IdentityMatrix (out);
 			break;
 	}
 }

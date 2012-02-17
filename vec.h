@@ -85,6 +85,9 @@ extern int
 Vec_BoxPlaneSide (const struct plane_s *plane, float mins[3], float maxs[3]);
 
 extern void
+Vec_IdentityMatrix (float mat[3][3]);
+
+extern void
 Vec_MultMatrix (float a[3][3], float b[3][3], float out[3][3]);
 
 extern void
