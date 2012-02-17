@@ -238,20 +238,40 @@ DrawFilledPoly (int color, float verts[MAX_SURF_VERTS][3], int numverts)
 
 
 static int
-ClipPoly (	float verts[MAX_SURF_VERTS][3],
-		float outverts[MAX_SURF_VERTS][3],
+ClipPoly (	float verts[MAX_SURF_VERTS + 1][3],
+		float outverts[MAX_SURF_VERTS + 1][3],
 		int count,
 		const struct plane_s *p)
 {
+	float dists[MAX_SURF_VERTS + 1];
+	float frac;
 	int i;
-	int numout = 0;
+	int numout;
+
+	if (count < 3)
+		return 0;
 
 	for (i = 0; i < count; i++)
+		dists[i] = Vec_Dot(verts[i], p->normal) - p->dist;
+	dists[i] = dists[0];
+
+	numout = 0;
+	for (i = 0; i < count; i++)
 	{
-		//TODO: ...
-		if (Vec_Dot(verts[i], p->normal) - p->dist > 0)
+		if (dists[i] >= 0.0)
 			Vec_Copy (verts[i], outverts[numout++]);
-		//TODO: ...
+
+		if (dists[i] == 0.0 || dists[i + 1] == 0.0)
+			continue;
+
+		if ((dists[i] > 0.0) == (dists[i + 1] > 0.0))
+			continue;
+
+		frac = dists[i] / (dists[i] - dists[i + 1]);
+		outverts[numout][0] = verts[i][0] + frac * (verts[i + 1][0] - verts[i][0]);
+		outverts[numout][1] = verts[i][1] + frac * (verts[i + 1][1] - verts[i][1]);
+		outverts[numout][2] = verts[i][2] + frac * (verts[i + 1][2] - verts[i][2]);
+		numout++;
 	}
 
 	return numout;
@@ -264,7 +284,7 @@ DrawFlatSurf (struct msurf_s *s)
 	const unsigned int *edgenums;
 	int i;
 	int numverts;
-	float verts[2][MAX_SURF_VERTS][3];
+	float verts[2][MAX_SURF_VERTS + 1][3];
 	int clipidx = 0;
 
 	if (Vec_Dot(s->normal, view.pos) - s->dist < PLANE_DIST_EPSILON)
@@ -284,10 +304,11 @@ DrawFlatSurf (struct msurf_s *s)
 
 		Vec_Copy (g_verts[vnum], verts[clipidx][i]);
 	}
+	Vec_Copy (verts[clipidx][0], verts[clipidx][i]);
 
 	/* clip against view planes */
 	numverts = s->numedges;
-	for (i = 0; i < 4 && numverts >= 3; i++)
+	for (i = 0; i < 4; i++)
 	{
 		numverts = ClipPoly (	verts[clipidx],
 					verts[!clipidx],
