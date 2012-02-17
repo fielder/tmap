@@ -244,7 +244,7 @@ R_Refresh (void)
 		pal_set = true;
 	}
 
-	if (1)
+	if (0)
 		DrawPal ();
 
 	R_DrawGeometry ();

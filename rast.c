@@ -187,35 +187,23 @@ BeginSpans (void)
 
 
 static void
-DrawSurf (struct msurf_s *s)
+DrawFilledPoly (int color, float verts[MAX_SURF_VERTS][3], int numverts)
 {
-	const unsigned int *edgenums;
-	unsigned int edgenum;
 	int i;
-	int vnum;
-	float transformed[3], v[3];
+	float local[3], v[3];
 	struct outvert_s *ov;
 	float min_v, max_v;
-
-	if (Vec_Dot(s->normal, view.pos) - s->dist < PLANE_DIST_EPSILON)
-		return;
+	struct span_s *span;
 
 	min_v = 99999.0;
 	max_v = -99999.0;
 
 	num_outverts = 0;
 
-	edgenums = g_surfedges + s->firstedge;
-	for (i = 0; i < s->numedges; i++)
+	for (i = 0; i < numverts; i++)
 	{
-		edgenum = edgenums[i];
-		if (edgenum & 0x80000000)
-			vnum = g_edges[edgenum & 0x7fffffff].v[1];
-		else
-			vnum = g_edges[edgenum].v[0];
-
-		Vec_Subtract (g_verts[vnum], view.pos, transformed);
-		TransformVec (transformed, v);
+		Vec_Subtract (verts[i], view.pos, local);
+		TransformVec (local, v);
 
 		ov = p_outverts + num_outverts++;
 
@@ -244,14 +232,72 @@ DrawSurf (struct msurf_s *s)
 	BeginSpans ();
 	FinishSpans ();
 
-	if (1)
+	for (span = spans; span != p_span; span++)
+		memset (r_buf + span->v * r_w + span->u, color, span->count);
+}
+
+
+static int
+ClipPoly (	float verts[MAX_SURF_VERTS][3],
+		float outverts[MAX_SURF_VERTS][3],
+		int count,
+		const struct plane_s *p)
+{
+	int i;
+	int numout = 0;
+
+	for (i = 0; i < count; i++)
 	{
-		struct span_s *span;
-		for (span = spans; span != p_span; span++)
-			memset (r_buf + span->v * r_w + span->u,
-				(uintptr_t)s >> 4,
-				span->count);
+		//TODO: ...
+		if (Vec_Dot(verts[i], p->normal) - p->dist > 0)
+			Vec_Copy (verts[i], outverts[numout++]);
+		//TODO: ...
 	}
+
+	return numout;
+}
+
+
+static void
+DrawFlatSurf (struct msurf_s *s)
+{
+	const unsigned int *edgenums;
+	int i;
+	int numverts;
+	float verts[2][MAX_SURF_VERTS][3];
+	int clipidx = 0;
+
+	if (Vec_Dot(s->normal, view.pos) - s->dist < PLANE_DIST_EPSILON)
+		return;
+
+	/* copy vertices */
+	edgenums = g_surfedges + s->firstedge;
+	for (i = 0; i < s->numedges; i++)
+	{
+		unsigned int edgenum = edgenums[i];
+		int vnum;
+
+		if (edgenum & 0x80000000)
+			vnum = g_edges[edgenum & 0x7fffffff].v[1];
+		else
+			vnum = g_edges[edgenum].v[0];
+
+		Vec_Copy (g_verts[vnum], verts[clipidx][i]);
+	}
+
+	/* clip against view planes */
+	numverts = s->numedges;
+	for (i = 0; i < 4 && numverts >= 3; i++)
+	{
+		numverts = ClipPoly (	verts[clipidx],
+					verts[!clipidx],
+					numverts,
+					&view.planes[i]);
+		clipidx = !clipidx;
+	}
+
+	if (numverts >= 3)
+		DrawFilledPoly ((uintptr_t)s >> 4, verts[clipidx], numverts);
 }
 
 
@@ -349,8 +395,10 @@ R_DrawGeometry (void)
 
 	for (i = 0; i < g_numsurfs; i++)
 	{
-//		DrawSurf (&g_surfs[i]);
-		DrawSurfEdges (&g_surfs[i]);
+		if (1)
+			DrawFlatSurf (&g_surfs[i]);
+		if (0)
+			DrawSurfEdges (&g_surfs[i]);
 	}
 
 #if 1
