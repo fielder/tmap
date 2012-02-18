@@ -78,26 +78,6 @@ DrawPoint (const float v[3], int c)
 
 
 static void
-Draw3DLine (const float v1[3], const float v2[3], int count, int color)
-{
-	int j;
-	float step;
-	float v[3], inc[3];
-
-	Vec_Subtract (v2, v1, inc);
-	step = Vec_Length(inc) / count;
-	Vec_Normalize (inc);
-	Vec_Scale (inc, step);
-	Vec_Copy (v1, v);
-	for (j = 0; j < count; j++)
-	{
-		Vec_Add (v, inc, v);
-		DrawPoint (v, color);
-	}
-}
-
-
-static void
 FinishSpans (void)
 {
 	const struct outvert_s *ov, *nv;
@@ -186,43 +166,6 @@ BeginSpans (void)
 
 
 static void
-DrawPolyOutline (int color, float verts[MAX_SURF_VERTS + 1][3], int numverts)
-{
-	int i;
-	float local[3], v[3];
-	struct outvert_s *ov;
-
-	num_outverts = 0;
-	for (i = 0; i < numverts; i++)
-	{
-		Vec_Subtract (verts[i], view.pos, local);
-		TransformVec (local, v);
-
-		ov = p_outverts + num_outverts++;
-
-		ov->zi = 1.0 / v[2];
-		ov->u = view.center_x + view.dist * ov->zi * v[0];
-		ov->v = view.center_y - view.dist * ov->zi * v[1];
-		ov->s = 0;
-		ov->t = 0;
-	}
-	p_outverts[num_outverts].zi = p_outverts[0].zi;
-	p_outverts[num_outverts].u = p_outverts[0].u;
-	p_outverts[num_outverts].v = p_outverts[0].v;
-	p_outverts[num_outverts].s = p_outverts[0].s;
-	p_outverts[num_outverts].t = p_outverts[0].t;
-
-	for (i = 0; i < numverts; i++)
-	{
-		struct outvert_s *a, *b;
-		a = &p_outverts[i];
-		b = &p_outverts[i + 1];
-		R_Line (a->u, a->v, b->u, b->v, color);
-	}
-}
-
-
-static void
 DrawFilledPoly (int color, float verts[MAX_SURF_VERTS + 1][3], int numverts)
 {
 	int i;
@@ -273,6 +216,45 @@ DrawFilledPoly (int color, float verts[MAX_SURF_VERTS + 1][3], int numverts)
 }
 
 
+static void
+DrawPolyOutline (int color, float verts[MAX_SURF_VERTS + 1][3], int numverts)
+{
+	int i;
+	float local[3], v[3];
+	struct outvert_s *ov;
+
+	num_outverts = 0;
+	for (i = 0; i < numverts; i++)
+	{
+		Vec_Subtract (verts[i], view.pos, local);
+		TransformVec (local, v);
+
+		ov = p_outverts + num_outverts++;
+
+		ov->zi = 1.0 / v[2];
+		ov->u = view.center_x + view.dist * ov->zi * v[0];
+		ov->v = view.center_y - view.dist * ov->zi * v[1];
+		ov->s = 0;
+		ov->t = 0;
+	}
+
+	/* make wrap-around edge easier to handle */
+	p_outverts[num_outverts].zi = p_outverts[0].zi;
+	p_outverts[num_outverts].u = p_outverts[0].u;
+	p_outverts[num_outverts].v = p_outverts[0].v;
+	p_outverts[num_outverts].s = p_outverts[0].s;
+	p_outverts[num_outverts].t = p_outverts[0].t;
+
+	for (i = 0; i < numverts; i++)
+	{
+		const struct outvert_s *a, *b;
+		a = &p_outverts[i];
+		b = &p_outverts[i + 1];
+		R_Line (a->u, a->v, b->u, b->v, color);
+	}
+}
+
+
 static int
 ClipPoly (	float verts[MAX_SURF_VERTS + 1][3],
 		float outverts[MAX_SURF_VERTS + 1][3],
@@ -289,8 +271,9 @@ ClipPoly (	float verts[MAX_SURF_VERTS + 1][3],
 
 	for (i = 0; i < count; i++)
 		dists[i] = Vec_Dot(verts[i], p->normal) - p->dist;
-	dists[i] = dists[0];
-	Vec_Copy (verts[0], verts[i]);
+
+	dists[i] = dists[0]; /* make wrap-around edge easier to handle */
+	Vec_Copy (verts[0], verts[i]); /* make wrap-around edge easier to handle */
 
 	numout = 0;
 	for (i = 0; i < count; i++)
@@ -315,10 +298,34 @@ ClipPoly (	float verts[MAX_SURF_VERTS + 1][3],
 }
 
 
+static int
+ExtractSurfaceVerts (const struct msurf_s *s, float outverts[MAX_SURF_VERTS + 1][3])
+{
+	const unsigned int *edgenums;
+	unsigned int edgenum;
+	int vnum;
+	int i;
+
+	edgenums = g_surfedges + s->firstedge;
+	for (i = 0; i < s->numedges; i++)
+	{
+		edgenum = edgenums[i];
+
+		if (edgenum & 0x80000000)
+			vnum = g_edges[edgenum & 0x7fffffff].v[1];
+		else
+			vnum = g_edges[edgenum].v[0];
+
+		Vec_Copy (g_verts[vnum], outverts[i]);
+	}
+
+	return s->numedges;
+}
+
+
 static void
 DrawFlatSurf (struct msurf_s *s)
 {
-	const unsigned int *edgenums;
 	int i;
 	int numverts;
 	float verts[2][MAX_SURF_VERTS + 1][3];
@@ -327,24 +334,9 @@ DrawFlatSurf (struct msurf_s *s)
 	if (Vec_Dot(s->normal, view.pos) - s->dist < PLANE_DIST_EPSILON)
 		return;
 
-	/* copy vertices */
-	edgenums = g_surfedges + s->firstedge;
-	for (i = 0; i < s->numedges; i++)
-	{
-		unsigned int edgenum = edgenums[i];
-		int vnum;
-
-		if (edgenum & 0x80000000)
-			vnum = g_edges[edgenum & 0x7fffffff].v[1];
-		else
-			vnum = g_edges[edgenum].v[0];
-
-		Vec_Copy (g_verts[vnum], verts[clipidx][i]);
-	}
-	Vec_Copy (verts[clipidx][0], verts[clipidx][i]);
+	numverts = ExtractSurfaceVerts (s, verts[clipidx]);
 
 	/* clip against view planes */
-	numverts = s->numedges;
 	for (i = 0; i < 4; i++)
 	{
 		numverts = ClipPoly (	verts[clipidx],
@@ -362,7 +354,6 @@ DrawFlatSurf (struct msurf_s *s)
 static void
 DrawSurfEdges (const struct msurf_s *s)
 {
-	const unsigned int *edgenums;
 	int i;
 	int numverts;
 	float verts[2][MAX_SURF_VERTS + 1][3];
@@ -371,24 +362,9 @@ DrawSurfEdges (const struct msurf_s *s)
 	if (Vec_Dot(s->normal, view.pos) - s->dist < PLANE_DIST_EPSILON)
 		return;
 
-	/* copy vertices */
-	edgenums = g_surfedges + s->firstedge;
-	for (i = 0; i < s->numedges; i++)
-	{
-		unsigned int edgenum = edgenums[i];
-		int vnum;
-
-		if (edgenum & 0x80000000)
-			vnum = g_edges[edgenum & 0x7fffffff].v[1];
-		else
-			vnum = g_edges[edgenum].v[0];
-
-		Vec_Copy (g_verts[vnum], verts[clipidx][i]);
-	}
-	Vec_Copy (verts[clipidx][0], verts[clipidx][i]);
+	numverts = ExtractSurfaceVerts (s, verts[clipidx]);
 
 	/* clip against view planes */
-	numverts = s->numedges;
 	for (i = 0; i < 4; i++)
 	{
 		numverts = ClipPoly (	verts[clipidx],
