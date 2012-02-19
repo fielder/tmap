@@ -10,37 +10,6 @@ struct tex_s
 	int w, h;
 };
 
-enum
-{
-	VPLANE_LEFT,
-	VPLANE_TOP,
-	VPLANE_RIGHT,
-	VPLANE_BOTTOM
-};
-
-struct view_s
-{
-	float center_x;
-	float center_y;
-
-	float fov_x; /* radians */
-	float fov_y; /* radians */
-
-	float dist;
-
-	float pos[3];
-
-	float angles[3]; /* radians */
-
-	float right[3];
-	float up[3];
-	float forward[3];
-
-	float xform[3][3]; /* world-to-camera */
-
-	struct plane_s planes[4];
-};
-
 /* render.c */
 #define MAX_W 1600
 #define MAX_H 1200
@@ -48,7 +17,6 @@ struct view_s
 extern int r_w;
 extern int r_h;
 extern uint8_t *r_buf;
-extern struct view_s view;
 
 extern void
 R_Init (void);

@@ -11,6 +11,7 @@ OBJS =	$(OBJDIR)/vec.o \
 	$(OBJDIR)/tmap.o \
 	$(OBJDIR)/render.o \
 	$(OBJDIR)/geom.o \
+	$(OBJDIR)/view.o \
 	$(OBJDIR)/rast.o \
 	$(OBJDIR)/pcx.o
 
@@ -32,6 +33,8 @@ $(OBJDIR)/tmap.o: tmap.c
 $(OBJDIR)/render.o: render.c
 	$(CC) -c $(CFLAGS) $? -o $@
 $(OBJDIR)/geom.o: geom.c
+	$(CC) -c $(CFLAGS) $? -o $@
+$(OBJDIR)/view.o: view.c
 	$(CC) -c $(CFLAGS) $? -o $@
 $(OBJDIR)/rast.o: rast.c
 	$(CC) -c $(CFLAGS) $? -o $@

@@ -4,6 +4,7 @@
 #include "cdefs.h"
 #include "vec.h"
 #include "geom.h"
+#include "view.h"
 #include "render.h"
 
 struct span_s
@@ -278,8 +279,11 @@ ClipPoly (	float verts[MAX_SURF_VERTS + 1][3],
 	numout = 0;
 	for (i = 0; i < count; i++)
 	{
+		float *cur = verts[i];
+		float *next = verts[i + 1];
+
 		if (dists[i] >= 0.0)
-			Vec_Copy (verts[i], outverts[numout++]);
+			Vec_Copy (cur, outverts[numout++]);
 
 		if (dists[i] == 0.0 || dists[i + 1] == 0.0)
 			continue;
@@ -288,9 +292,9 @@ ClipPoly (	float verts[MAX_SURF_VERTS + 1][3],
 			continue;
 
 		frac = dists[i] / (dists[i] - dists[i + 1]);
-		outverts[numout][0] = verts[i][0] + frac * (verts[i + 1][0] - verts[i][0]);
-		outverts[numout][1] = verts[i][1] + frac * (verts[i + 1][1] - verts[i][1]);
-		outverts[numout][2] = verts[i][2] + frac * (verts[i + 1][2] - verts[i][2]);
+		outverts[numout][0] = cur[0] + frac * (next[0] - cur[0]);
+		outverts[numout][1] = cur[1] + frac * (next[1] - cur[1]);
+		outverts[numout][2] = cur[2] + frac * (next[2] - cur[2]);
 		numout++;
 	}
 
@@ -299,7 +303,8 @@ ClipPoly (	float verts[MAX_SURF_VERTS + 1][3],
 
 
 static int
-ExtractSurfaceVerts (const struct msurf_s *s, float outverts[MAX_SURF_VERTS + 1][3])
+ExtractSurfaceVerts (	const struct msurf_s *s,
+			float outverts[MAX_SURF_VERTS + 1][3])
 {
 	const unsigned int *edgenums;
 	unsigned int edgenum;
@@ -379,63 +384,10 @@ DrawSurfEdges (const struct msurf_s *s)
 }
 
 
-static void
-SetupFrustum (void)
-{
-	int i;
-	float n[3];
-	float xform[3][3];
-	float ang, adj;
-
-	Vec_AnglesMatrix (view.angles, xform, ROT_MATRIX_ORDER_ZYX);
-
-	/* DEBUG: adjust view pyramid inward */
-	adj = 2.0 * (M_PI / 180.0);
-
-	/* left plane */
-	ang = (view.fov_x / 2.0) - adj;
-	n[0] = cos (ang);
-	n[1] = 0.0;
-	n[2] = -sin (ang);
-	for (i = 0; i < 3; i++) /* rotate with view angles */
-		view.planes[VPLANE_LEFT].normal[i] = Vec_Dot (xform[i], n);
-	view.planes[VPLANE_LEFT].dist = Vec_Dot (view.planes[VPLANE_LEFT].normal, view.pos);
-
-	/* right plane */
-	ang = M_PI - ((view.fov_x / 2.0) - adj);
-	n[0] = cos (ang);
-	n[1] = 0.0;
-	n[2] = -sin (ang);
-	for (i = 0; i < 3; i++) /* rotate with view angles */
-		view.planes[VPLANE_RIGHT].normal[i] = Vec_Dot (xform[i], n);
-	view.planes[VPLANE_RIGHT].dist = Vec_Dot (view.planes[VPLANE_RIGHT].normal, view.pos);
-
-	/* bottom plane */
-	ang = (M_PI / 2.0) - ((view.fov_y / 2.0) - adj);
-	n[0] = 0.0;
-	n[1] = sin (ang);
-	n[2] = -cos (ang);
-	for (i = 0; i < 3; i++) /* rotate with view angles */
-		view.planes[VPLANE_BOTTOM].normal[i] = Vec_Dot (xform[i], n);
-	view.planes[VPLANE_BOTTOM].dist = Vec_Dot (view.planes[VPLANE_BOTTOM].normal, view.pos);
-
-	/* top plane */
-	ang = -(M_PI / 2.0) + ((view.fov_y / 2.0) - adj);
-	n[0] = 0.0;
-	n[1] = sin (ang);
-	n[2] = -cos (ang);
-	for (i = 0; i < 3; i++) /* rotate with view angles */
-		view.planes[VPLANE_TOP].normal[i] = Vec_Dot (xform[i], n);
-	view.planes[VPLANE_TOP].dist = Vec_Dot (view.planes[VPLANE_TOP].normal, view.pos);
-}
-
-
 void
 R_DrawGeometry (void)
 {
 	int i;
-
-	SetupFrustum ();
 
 	for (i = 0; i < g_numsurfs; i++)
 	{

@@ -7,6 +7,7 @@
 #include "vec.h"
 #include "pcx.h"
 #include "geom.h"
+#include "view.h"
 #include "render.h"
 
 static SDL_Surface *sdl_surf = NULL;
@@ -15,23 +16,6 @@ static uint8_t pal[768];
 int r_w = 512;
 int r_h = 384;
 uint8_t *r_buf = NULL;
-struct view_s view;
-
-
-static void
-SetupView (int w, int h, float fov_x)
-{
-	view.center_x = w / 2.0 - 0.5;
-	view.center_y = h / 2.0 - 0.5;
-
-	view.fov_x = fov_x;
-	view.dist = (w / 2.0) / tan(view.fov_x / 2.0);
-	view.fov_y = 2.0 * atan((h / 2.0) / view.dist);
-
-	Vec_Clear (view.pos);
-	Vec_Clear (view.angles);
-	view.angles[1] = M_PI; /* start off looking to +z axis */
-}
 
 
 void
@@ -50,7 +34,7 @@ R_Init (void)
 	//TODO: if sdl surface has contiguous rows, don't need this buffer
 	r_buf = malloc (r_w * r_h);
 
-	SetupView (r_w, r_h, 90 * (M_PI / 180.0));
+	View_Setup (r_w, r_h, 90 * (M_PI / 180.0));
 
 	Geom_Setup ();
 }
@@ -247,6 +231,7 @@ R_Refresh (void)
 	if (0)
 		DrawPal ();
 
+	View_SetupFrustum ();
 	R_DrawGeometry ();
 
 	Vid_Swap ();

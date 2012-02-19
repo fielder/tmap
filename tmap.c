@@ -6,6 +6,7 @@
 
 #include "cdefs.h"
 #include "vec.h"
+#include "view.h"
 #include "render.h"
 
 static bool quit = false;
