@@ -79,7 +79,7 @@ AddQuad (const char *texpath, int v1, int v2, int v3, int v4)
 			s->normal,
 			&s->dist);
 
-	R_LoadTex (&s->tex, texpath);
+	s->texpath = texpath;
 }
 
 

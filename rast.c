@@ -5,6 +5,7 @@
 #include "vec.h"
 #include "geom.h"
 #include "view.h"
+#include "r_tex.h"
 #include "render.h"
 
 struct span_s
@@ -391,10 +392,15 @@ R_DrawGeometry (void)
 
 	for (i = 0; i < g_numsurfs; i++)
 	{
+		struct msurf_s *s = &g_surfs[i];
+
+		if (s->tex == NULL)
+			s->tex = R_LoadTex (s->texpath);
+
 		if (1)
-			DrawFlatSurf (&g_surfs[i]);
+			DrawFlatSurf (s);
 		if (0)
-			DrawSurfEdges (&g_surfs[i]);
+			DrawSurfEdges (s);
 	}
 
 #if 1

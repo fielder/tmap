@@ -2,7 +2,7 @@
 #define __GEOM_H__
 
 #include "cdefs.h"
-#include "render.h"
+#include "r_tex.h"
 
 struct medge_s
 {
@@ -17,7 +17,8 @@ struct msurf_s
 	float normal[3];
 	float dist;
 
-	struct tex_s tex;
+	const char *texpath;
+	struct tex_s *tex;
 
 	uint8_t *cache;
 	int cache_w, cache_h;

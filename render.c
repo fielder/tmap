@@ -37,6 +37,9 @@ R_Init (void)
 	View_Setup (r_w, r_h, 90 * (M_PI / 180.0));
 
 	Geom_Setup ();
+
+	/* load palette */
+	free (LoadPCX("PALETTE.pcx", NULL, NULL, pal));
 }
 
 
@@ -48,13 +51,6 @@ R_Shutdown (void)
 
 	SDL_FreeSurface (sdl_surf);
 	sdl_surf = NULL;
-}
-
-
-void
-R_LoadTex (struct tex_s *tex, const char *path)
-{
-	tex->pixels = LoadPCX (path, &tex->w, &tex->h, pal);
 }
 
 

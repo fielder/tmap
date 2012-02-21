@@ -13,6 +13,7 @@ OBJS =	$(OBJDIR)/vec.o \
 	$(OBJDIR)/geom.o \
 	$(OBJDIR)/view.o \
 	$(OBJDIR)/rast.o \
+	$(OBJDIR)/r_tex.o \
 	$(OBJDIR)/pcx.o
 
 all: $(TARGET)
@@ -37,6 +38,8 @@ $(OBJDIR)/geom.o: geom.c
 $(OBJDIR)/view.o: view.c
 	$(CC) -c $(CFLAGS) $? -o $@
 $(OBJDIR)/rast.o: rast.c
+	$(CC) -c $(CFLAGS) $? -o $@
+$(OBJDIR)/r_tex.o: r_tex.c
 	$(CC) -c $(CFLAGS) $? -o $@
 $(OBJDIR)/pcx.o: pcx.c
 	$(CC) -c $(CFLAGS) $? -o $@

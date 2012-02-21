@@ -4,12 +4,6 @@
 #include "cdefs.h"
 #include "vec.h"
 
-struct tex_s
-{
-	uint8_t *pixels;
-	int w, h;
-};
-
 /* render.c */
 #define MAX_W 1600
 #define MAX_H 1200
@@ -22,9 +16,6 @@ extern void
 R_Init (void);
 extern void
 R_Shutdown (void);
-
-extern void
-R_LoadTex (struct tex_s *tex, const char *path);
 
 extern void
 Vid_SetPalette (const uint8_t palette[768]);
