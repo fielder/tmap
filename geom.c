@@ -173,9 +173,9 @@ Geom_Setup (void)
 	/* ================================ */
 
 	AddVertex (8, 0, 512);
-	AddVertex (8, -200, 512);
-	AddVertex (-8, -200, 512);
-	AddVertex (-8, 0, 512);
+	AddVertex (8, -128, 512);
+	AddVertex (0, -128, 512);
+	AddVertex (0, 0, 512);
 
 	AddEdge (16, 17);
 	AddEdge (17, 18);

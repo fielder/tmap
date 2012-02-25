@@ -10,14 +10,16 @@
 
 struct span_s
 {
-	int u, v;
+	int u, v; /* screen coords */
+	float si, ti, zi;
+	float end_si, end_ti, end_zi;
 	int count;
 };
 
 struct outvert_s
 {
 	float u, v; /* screen coords */
-	float s, t; /* texel coords */
+	float si, ti; /* texel coords */
 	float zi;
 };
 
@@ -33,6 +35,7 @@ static int p_topidx, p_bottomidx;
 //TODO: When starting to scan out an edge we ceil the v, but don't match
 //	up the u with the same adjustment. Is it necessary?
 
+#define AFFINE 0
 
 static void
 TransformVec (const float v[3], float out[3])
@@ -45,47 +48,15 @@ TransformVec (const float v[3], float out[3])
 
 
 static void
-DrawPoint (const float v[3], int c)
-{
-	int i;
-	float transformed[3];
-	float out[3];
-
-	for (i = 0; i < 4; i++)
-	{
-		const struct plane_s *p = &view.planes[i];
-		if (Vec_Dot(p->normal, v) - p->dist < 0.0)
-			return;
-	}
-
-	Vec_Subtract (v, view.pos, transformed);
-	TransformVec (transformed, out);
-
-	if (out[2] > 0.0)
-	{
-		float zi;
-		int u, v;
-
-		zi = 1.0 / out[2];
-		u = ceil(view.center_x + view.dist * zi * out[0]);
-		v = ceil(view.center_y - view.dist * zi * out[1]);
-
-		if (	u >= 0 && u < r_w &&
-			v >= 0 && v < r_h )
-		{
-			r_buf[v * r_w + u] = c;
-		}
-	}
-}
-
-
-static void
 FinishSpans (void)
 {
 	const struct outvert_s *ov, *nv;
 	int i, nexti;
 	int itop, ibot;
 	int u, step_u;
+	float fstep_u;
+	float fstep_si, fstep_ti, fstep_zi;
+	float si, ti, zi;
 
 	p_span = spans;
 
@@ -102,15 +73,33 @@ FinishSpans (void)
 
 		if (itop < ibot)
 		{
-			step_u = ((nv->u - ov->u) / (nv->v - ov->v)) * 0x10000;
+			fstep_u = (nv->u - ov->u) / (nv->v - ov->v);
+			step_u = fstep_u * 0x10000;
+
+			fstep_si = (nv->si - ov->si) / (nv->v - ov->v);
+			fstep_ti = (nv->ti - ov->ti) / (nv->v - ov->v);
+			fstep_zi = (nv->zi - ov->zi) / (nv->v - ov->v);
+
+			si = ov->si;
+			ti = ov->ti;
+			zi = ov->zi;
 			u = ov->u * 0x10000;
 			while (itop < ibot)
 			{
 				p_span->count = (u >> 16) - p_span->u;
+
 //FIXME: we see -1 length spans when the view is nearly right on the plane
 				if (p_span->count < 0)
 					p_span->count = 0;
+
+				p_span->end_si = si;
+				p_span->end_ti = ti;
+				p_span->end_zi = zi;
+
 				u += step_u;
+				si += fstep_si;
+				ti += fstep_ti;
+				zi += fstep_zi;
 				p_span++;
 				itop++;
 			}
@@ -131,6 +120,9 @@ BeginSpans (void)
 	int i, nexti;
 	int itop, ibot;
 	int u, step_u;
+	float fstep_u;
+	float fstep_si, fstep_ti, fstep_zi;
+	float si, ti, zi;
 
 	p_span = spans;
 
@@ -147,13 +139,29 @@ BeginSpans (void)
 
 		if (itop < ibot)
 		{
-			step_u = ((nv->u - ov->u) / (nv->v - ov->v)) * 0x10000;
+			fstep_u = (nv->u - ov->u) / (nv->v - ov->v);
+			step_u = fstep_u * 0x10000;
+
+			fstep_si = (nv->si - ov->si) / (nv->v - ov->v);
+			fstep_ti = (nv->ti - ov->ti) / (nv->v - ov->v);
+			fstep_zi = (nv->zi - ov->zi) / (nv->v - ov->v);
+
+			si = ov->si;
+			ti = ov->ti;
+			zi = ov->zi;
 			u = ov->u * 0x10000;
 			while (itop < ibot)
 			{
 				p_span->u = u >> 16;
 				p_span->v = itop;
+				p_span->si = si;
+				p_span->ti = ti;
+				p_span->zi = zi;
+
 				u += step_u;
+				si += fstep_si;
+				ti += fstep_ti;
+				zi += fstep_zi;
 				p_span++;
 				itop++;
 			}
@@ -168,13 +176,56 @@ BeginSpans (void)
 
 
 static void
-DrawFilledPoly (int color, float verts[MAX_SURF_VERTS + 1][3], int numverts)
+DrawTexturedSpans (const struct tex_s *tex)
 {
+	struct span_s *span;
+
+	for (span = spans; span != p_span; span++)
+	{
+		int i;
+		uint8_t *dest = r_buf + span->v * r_w + span->u;
+		float si_inc = (span->end_si - span->si) / span->count;
+		float ti_inc = (span->end_ti - span->ti) / span->count;
+		float zi_inc = (span->end_zi - span->zi) / span->count;
+		float si, ti, zi;
+
+		for (	i = 0, si = span->si, ti = span->ti, zi = span->zi;
+			i < span->count;
+			i++, si += si_inc, ti += ti_inc, zi += zi_inc)
+		{
+#if AFFINE
+			int s = si;
+			int t = ti;
+#else
+			int s = si / zi;
+			int t = ti / zi;
+#endif
+			dest[i] = tex->pixels[t * tex->w + s];
+		}
+	}
+}
+
+
+static void
+DrawFlatSpans (int color)
+{
+	struct span_s *span;
+
+	for (span = spans; span != p_span; span++)
+		memset (r_buf + span->v * r_w + span->u, color, span->count);
+}
+
+
+static void
+DrawTexturedPoly (	struct msurf_s *s,
+			float verts[MAX_SURF_VERTS + 1][5],
+			int numverts)
+{
+	int color = (uintptr_t)s >> 4;
 	int i;
 	float local[3], v[3];
 	struct outvert_s *ov;
 	float min_v, max_v;
-	struct span_s *span;
 
 	min_v = 99999.0;
 	max_v = -99999.0;
@@ -191,8 +242,13 @@ DrawFilledPoly (int color, float verts[MAX_SURF_VERTS + 1][3], int numverts)
 		ov->zi = 1.0 / v[2];
 		ov->u = view.center_x + view.dist * ov->zi * v[0];
 		ov->v = view.center_y - view.dist * ov->zi * v[1];
-		ov->s = 0;
-		ov->t = 0;
+#if AFFINE
+		ov->si = verts[i][3];
+		ov->ti = verts[i][4];
+#else
+		ov->si = verts[i][3] * ov->zi;
+		ov->ti = verts[i][4] * ov->zi;
+#endif
 
 		/* find top & bottom verts */
 		if (ov->v < min_v)
@@ -213,53 +269,16 @@ DrawFilledPoly (int color, float verts[MAX_SURF_VERTS + 1][3], int numverts)
 	BeginSpans ();
 	FinishSpans ();
 
-	for (span = spans; span != p_span; span++)
-		memset (r_buf + span->v * r_w + span->u, color, span->count);
-}
-
-
-static void
-DrawPolyOutline (int color, float verts[MAX_SURF_VERTS + 1][3], int numverts)
-{
-	int i;
-	float local[3], v[3];
-	struct outvert_s *ov;
-
-	num_outverts = 0;
-	for (i = 0; i < numverts; i++)
-	{
-		Vec_Subtract (verts[i], view.pos, local);
-		TransformVec (local, v);
-
-		ov = p_outverts + num_outverts++;
-
-		ov->zi = 1.0 / v[2];
-		ov->u = view.center_x + view.dist * ov->zi * v[0];
-		ov->v = view.center_y - view.dist * ov->zi * v[1];
-		ov->s = 0;
-		ov->t = 0;
-	}
-
-	/* make wrap-around edge easier to handle */
-	p_outverts[num_outverts].zi = p_outverts[0].zi;
-	p_outverts[num_outverts].u = p_outverts[0].u;
-	p_outverts[num_outverts].v = p_outverts[0].v;
-	p_outverts[num_outverts].s = p_outverts[0].s;
-	p_outverts[num_outverts].t = p_outverts[0].t;
-
-	for (i = 0; i < numverts; i++)
-	{
-		const struct outvert_s *a, *b;
-		a = &p_outverts[i];
-		b = &p_outverts[i + 1];
-		R_Line (a->u, a->v, b->u, b->v, color);
-	}
+	if (1)
+		DrawTexturedSpans (s->tex);
+	else
+		DrawFlatSpans (color);
 }
 
 
 static int
-ClipPoly (	float verts[MAX_SURF_VERTS + 1][3],
-		float outverts[MAX_SURF_VERTS + 1][3],
+ClipPoly (	float verts[MAX_SURF_VERTS + 1][5],
+		float outverts[MAX_SURF_VERTS + 1][5],
 		int count,
 		const struct plane_s *p)
 {
@@ -274,8 +293,13 @@ ClipPoly (	float verts[MAX_SURF_VERTS + 1][3],
 	for (i = 0; i < count; i++)
 		dists[i] = Vec_Dot(verts[i], p->normal) - p->dist;
 
-	dists[i] = dists[0]; /* make wrap-around edge easier to handle */
-	Vec_Copy (verts[0], verts[i]); /* make wrap-around edge easier to handle */
+	/* make wrap-around edge easier to handle */
+	dists[i] = dists[0];
+	verts[i][0] = verts[0][0];
+	verts[i][1] = verts[0][1];
+	verts[i][2] = verts[0][2];
+	verts[i][3] = verts[0][3];
+	verts[i][4] = verts[0][4];
 
 	numout = 0;
 	for (i = 0; i < count; i++)
@@ -284,7 +308,14 @@ ClipPoly (	float verts[MAX_SURF_VERTS + 1][3],
 		float *next = verts[i + 1];
 
 		if (dists[i] >= 0.0)
-			Vec_Copy (cur, outverts[numout++]);
+		{
+			outverts[numout][0] = cur[0];
+			outverts[numout][1] = cur[1];
+			outverts[numout][2] = cur[2];
+			outverts[numout][3] = cur[3];
+			outverts[numout][4] = cur[4];
+			numout++;
+		}
 
 		if (dists[i] == 0.0 || dists[i + 1] == 0.0)
 			continue;
@@ -296,6 +327,8 @@ ClipPoly (	float verts[MAX_SURF_VERTS + 1][3],
 		outverts[numout][0] = cur[0] + frac * (next[0] - cur[0]);
 		outverts[numout][1] = cur[1] + frac * (next[1] - cur[1]);
 		outverts[numout][2] = cur[2] + frac * (next[2] - cur[2]);
+		outverts[numout][3] = cur[3] + frac * (next[3] - cur[3]);
+		outverts[numout][4] = cur[4] + frac * (next[4] - cur[4]);
 		numout++;
 	}
 
@@ -305,7 +338,7 @@ ClipPoly (	float verts[MAX_SURF_VERTS + 1][3],
 
 static int
 ExtractSurfaceVerts (	const struct msurf_s *s,
-			float outverts[MAX_SURF_VERTS + 1][3])
+			float outverts[MAX_SURF_VERTS + 1][5])
 {
 	const unsigned int *edgenums;
 	unsigned int edgenum;
@@ -322,7 +355,9 @@ ExtractSurfaceVerts (	const struct msurf_s *s,
 		else
 			vnum = g_edges[edgenum].v[0];
 
-		Vec_Copy (g_verts[vnum], outverts[i]);
+		outverts[i][0] = g_verts[vnum][0];
+		outverts[i][1] = g_verts[vnum][1];
+		outverts[i][2] = g_verts[vnum][2];
 	}
 
 	return s->numedges;
@@ -330,17 +365,32 @@ ExtractSurfaceVerts (	const struct msurf_s *s,
 
 
 static void
-DrawFlatSurf (struct msurf_s *s)
+DrawTexturedSurf (struct msurf_s *s)
 {
 	int i;
 	int numverts;
-	float verts[2][MAX_SURF_VERTS + 1][3];
+	float verts[2][MAX_SURF_VERTS + 1][5];
 	int clipidx = 0;
 
 	if (Vec_Dot(s->normal, view.pos) - s->dist < PLANE_DIST_EPSILON)
 		return;
 
 	numverts = ExtractSurfaceVerts (s, verts[clipidx]);
+
+	{
+		float adj = 0.01; /* adjust inward pixel count */
+		verts[clipidx][0][3] = 0.0 + adj;
+		verts[clipidx][0][4] = 0.0 + adj;
+
+		verts[clipidx][1][3] = 0.0 + adj;
+		verts[clipidx][1][4] = s->tex->h - adj;
+
+		verts[clipidx][2][3] = s->tex->w - adj;
+		verts[clipidx][2][4] = s->tex->h - adj;
+
+		verts[clipidx][3][3] = s->tex->w - adj;
+		verts[clipidx][3][4] = 0.0 + adj;
+	}
 
 	/* clip against view planes */
 	for (i = 0; i < 4; i++)
@@ -353,35 +403,7 @@ DrawFlatSurf (struct msurf_s *s)
 	}
 
 	if (numverts >= 3)
-		DrawFilledPoly ((uintptr_t)s >> 4, verts[clipidx], numverts);
-}
-
-
-static void
-DrawSurfEdges (const struct msurf_s *s)
-{
-	int i;
-	int numverts;
-	float verts[2][MAX_SURF_VERTS + 1][3];
-	int clipidx = 0;
-
-	if (Vec_Dot(s->normal, view.pos) - s->dist < PLANE_DIST_EPSILON)
-		return;
-
-	numverts = ExtractSurfaceVerts (s, verts[clipidx]);
-
-	/* clip against view planes */
-	for (i = 0; i < 4; i++)
-	{
-		numverts = ClipPoly (	verts[clipidx],
-					verts[!clipidx],
-					numverts,
-					&view.planes[i]);
-		clipidx = !clipidx;
-	}
-
-	if (numverts >= 3)
-		DrawPolyOutline ((uintptr_t)s >> 4, verts[clipidx], numverts);
+		DrawTexturedPoly (s, verts[clipidx], numverts);
 }
 
 
@@ -397,27 +419,6 @@ R_DrawGeometry (void)
 		if (s->tex == NULL)
 			s->tex = R_LoadTex (s->texpath);
 
-		if (1)
-			DrawFlatSurf (s);
-		if (0)
-			DrawSurfEdges (s);
+		DrawTexturedSurf (s);
 	}
-
-#if 1
-	{
-		float v[3];
-
-		for (i = 0; i < 128; i++)
-		{
-			Vec_Clear (v); v[0] = i;
-			DrawPoint (v, 176);
-
-			Vec_Clear (v); v[1] = i;
-			DrawPoint (v, 112);
-
-			Vec_Clear (v); v[2] = i;
-			DrawPoint (v, 198);
-		}
-	}
-#endif
 }
